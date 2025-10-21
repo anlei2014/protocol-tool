@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV解析工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CSV解析工具</h1>
+            <p>上传CSV文件，快速解析和预览数据</p>
+        </header>
+
+        <main>
+            <!-- 文件上传区域 -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>拖拽CSV文件到此处或点击选择文件</h3>
+                        <p>支持.csv格式文件</p>
+                        <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            选择文件
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 协议选择区域 -->
+                <div class="protocol-section">
+                    <h4>选择解析协议：</h4>
+                    <div class="protocol-buttons">
+                        <button class="protocol-btn active" id="canBtn" data-protocol="CAN">
+                            <span class="protocol-icon">🔧</span>
+                            CAN协议 (FIXED)
+                        </button>
+                        <button class="protocol-btn" id="canopenBtn" data-protocol="CANOPEN">
+                            <span class="protocol-icon">📱</span>
+                            CANOPEN协议 (Mobile)
+                        </button>
+                    </div>
+                </div>
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">上传中...</p>
+                </div>
+            </section>
+
+            <!-- 文件列表 -->
+            <section class="files-section">
+                <div class="section-header">
+                    <h2>已上传文件</h2>
+                    <button class="refresh-btn" onclick="loadFiles()">刷新</button>
+                </div>
+                <div class="files-list" id="filesList">
+                    <div class="loading" id="filesLoading">加载中...</div>
+                </div>
+            </section>
+
+            <!-- 数据预览 -->
+            <section class="preview-section" id="previewSection" style="display: none;">
+                <div class="section-header">
+                    <h2>数据预览</h2>
+                    <button class="close-btn" onclick="closePreview()">关闭</button>
+                </div>
+                <div class="preview-info" id="previewInfo"></div>
+                <div class="table-container">
+                    <table class="data-table" id="dataTable">
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- 消息提示 -->
+        <div class="message" id="message"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
