@@ -222,6 +222,8 @@ function showPreview(data, filename, protocol = 'CAN') {
     const previewInfo = document.getElementById('previewInfo');
     const tableHead = document.getElementById('tableHead');
     const tableBody = document.getElementById('tableBody');
+    const sidebarTitleEl = document.getElementById('sidebarTitle');
+    const messageListEl = document.getElementById('messageList');
 
     // 显示预览区域
     previewSection.style.display = 'block';
@@ -241,27 +243,91 @@ function showPreview(data, filename, protocol = 'CAN') {
         <strong>列数:</strong> ${data.headers.length}
     `;
 
-    // 渲染表头
+    // 左侧标题根据协议变化
+    sidebarTitleEl.textContent = protocol === 'CANOPEN' ? 'Available CANopen messages' : 'Available CAN messages';
+
+    // 统一列映射：Time, From->To, Id, Data
+    const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data'];
     tableHead.innerHTML = `
         <tr>
-            ${data.headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}
+            ${unifiedHeaders.map(h => `<th>${h}</th>`).join('')}
         </tr>
     `;
 
-    // 渲染表格数据（限制显示前100行以提高性能）
+    // 根据头部名找到相应的列索引（不区分大小写）
+    const headerIndex = (name) => {
+        const idx = data.headers.findIndex(h => (h || '').toString().toLowerCase() === name.toLowerCase());
+        return idx >= 0 ? idx : -1;
+    };
+
+    const idxTime = headerIndex('Time');
+    const idxSource = headerIndex('Source');
+    const idxTarget = headerIndex('Target');
+    const idxName = headerIndex('Name');
+    const idxBuffer = headerIndex('Buffer');
+
+    // 生成统一视图数据
     const maxRows = Math.min(data.rows.length, 100);
-    tableBody.innerHTML = data.rows.slice(0, maxRows).map(row => `
+    const unifiedRows = [];
+    const idSet = new Set(); // 左侧唯一消息ID
+
+    for (let i = 0; i < maxRows; i++) {
+        const row = data.rows[i] || [];
+        const time = idxTime >= 0 ? (row[idxTime] || '') : '';
+        const source = idxSource >= 0 ? (row[idxSource] || '') : '';
+        const target = idxTarget >= 0 ? (row[idxTarget] || '') : '';
+        const name = idxName >= 0 ? (row[idxName] || '') : '';
+        const buffer = idxBuffer >= 0 ? (row[idxBuffer] || '') : '';
+
+        // 解析 Buffer: 形如 string=2cf:8:[10 40 ff 37 48 c1 0a 00]
+        let parsedId = '';
+        let parsedData = '';
+        if (buffer) {
+            const m = buffer.match(/^\s*string=([0-9a-fA-F]+):\d+:\[(.*?)\]\s*$/);
+            if (m) {
+                parsedId = m[1];
+                // 规范化数据字节为大写两位分隔
+                parsedData = m[2]
+                    .trim()
+                    .split(/\s+/)
+                    .map(b => b.toUpperCase())
+                    .join(' ');
+            }
+        }
+
+        const fromTo = `${source}->${target}`;
+        const id = parsedId || name || 'N/A';
+        const dataField = parsedData || buffer || '';
+
+        unifiedRows.push([time, fromTo, id, dataField]);
+
+        // 收集唯一ID
+        if (id && id !== 'N/A') {
+            idSet.add(id);
+        }
+    }
+
+    // 渲染表格数据
+    tableBody.innerHTML = unifiedRows.map(cols => `
         <tr>
-            ${row.map(cell => `<td title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`).join('')}
+            ${cols.map(cell => `<td title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`).join('')}
         </tr>
     `).join('');
 
-    // 如果数据超过100行，显示提示
+    // 若总数超过100，提示
     if (data.rows.length > 100) {
         const infoRow = document.createElement('tr');
-        infoRow.innerHTML = `<td colspan="${data.headers.length}" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${data.rows.length}行数据</td>`;
+        infoRow.innerHTML = `<td colspan="${unifiedHeaders.length}" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${data.rows.length}行数据</td>`;
         tableBody.appendChild(infoRow);
     }
+
+    // 渲染左侧消息列表（唯一且按字典序）
+    const uniqueIds = Array.from(idSet).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
+    messageListEl.innerHTML = uniqueIds.map(id => `
+        <li>
+            <span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
+        </li>
+    `).join('');
 }
 
 // 关闭预览

@@ -68,11 +68,23 @@
                     <button class="close-btn" onclick="closePreview()">关闭</button>
                 </div>
                 <div class="preview-info" id="previewInfo"></div>
-                <div class="table-container">
-                    <table class="data-table" id="dataTable">
-                        <thead id="tableHead"></thead>
-                        <tbody id="tableBody"></tbody>
-                    </table>
+
+                <div class="preview-split">
+                    <!-- 左侧：消息列表 -->
+                    <aside class="preview-sidebar">
+                        <div class="sidebar-title" id="sidebarTitle">Available CAN messages</div>
+                        <ul class="message-list" id="messageList"></ul>
+                    </aside>
+
+                    <!-- 右侧：统一表格视图 -->
+                    <div class="preview-main">
+                        <div class="table-container">
+                            <table class="data-table" id="dataTable">
+                                <thead id="tableHead"></thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
