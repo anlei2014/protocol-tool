@@ -4,95 +4,150 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSV解析工具</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>CSV解析工具</h1>
-            <p>上传CSV文件，快速解析和预览数据</p>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <header class="text-center text-white mb-5">
+            <h1 class="display-4 fw-bold mb-3">CSV解析工具</h1>
+            <p class="lead">上传CSV文件，快速解析和预览数据</p>
         </header>
 
-        <main>
+        <main class="row g-4">
             <!-- 文件上传区域 -->
-            <section class="upload-section">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-content">
-                        <div class="upload-icon">📁</div>
-                        <h3>拖拽CSV文件到此处或点击选择文件</h3>
-                        <p>支持.csv格式文件</p>
-                        <input type="file" id="fileInput" accept=".csv" style="display: none;">
-                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-                            选择文件
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 协议选择区域 -->
-                <div class="protocol-section">
-                    <h4>选择解析协议：</h4>
-                    <div class="protocol-buttons">
-                        <button class="protocol-btn active" id="canBtn" data-protocol="CAN">
-                            <span class="protocol-icon">🔧</span>
-                            CAN协议 (FIXED)
-                        </button>
-                        <button class="protocol-btn" id="canopenBtn" data-protocol="CANOPEN">
-                            <span class="protocol-icon">📱</span>
-                            CANOPEN协议 (Mobile)
-                        </button>
-                    </div>
-                </div>
-                <div class="upload-progress" id="uploadProgress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <p id="progressText">上传中...</p>
-                </div>
-            </section>
-
-            <!-- 文件列表 -->
-            <section class="files-section">
-                <div class="section-header">
-                    <h2>已上传文件</h2>
-                    <button class="refresh-btn" onclick="loadFiles()">刷新</button>
-                </div>
-                <div class="files-list" id="filesList">
-                    <div class="loading" id="filesLoading">加载中...</div>
-                </div>
-            </section>
-
-            <!-- 数据预览 -->
-            <section class="preview-section" id="previewSection" style="display: none;">
-                <div class="section-header">
-                    <h2>数据预览</h2>
-                    <button class="close-btn" onclick="closePreview()">关闭</button>
-                </div>
-                <div class="preview-info" id="previewInfo"></div>
-
-                <div class="preview-split">
-                    <!-- 左侧：消息列表 -->
-                    <aside class="preview-sidebar">
-                        <div class="sidebar-title" id="sidebarTitle">Available CAN messages</div>
-                        <ul class="message-list" id="messageList"></ul>
-                    </aside>
-
-                    <!-- 右侧：统一表格视图 -->
-                    <div class="preview-main">
-                        <div class="table-container">
-                            <table class="data-table" id="dataTable">
-                                <thead id="tableHead"></thead>
-                                <tbody id="tableBody"></tbody>
-                            </table>
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <!-- 拖拽上传区域 -->
+                        <div class="upload-area border border-3 border-dashed rounded-3 p-5 text-center" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
+                                <h4 class="mb-3">拖拽CSV文件到此处或点击选择文件</h4>
+                                <p class="text-muted mb-4">支持.csv格式文件</p>
+                                <input type="file" id="fileInput" accept=".csv" class="d-none">
+                                <button class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-folder2-open me-2"></i>选择文件
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 协议选择区域 -->
+                        <div class="mt-4 p-3 bg-light rounded-3">
+                            <h5 class="mb-3">
+                                <i class="bi bi-gear-fill me-2"></i>选择解析协议：
+                            </h5>
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary active" id="canBtn" data-protocol="CAN">
+                                    <i class="bi bi-tools me-2"></i>CAN协议 (FIXED)
+                                </button>
+                                <button class="btn btn-outline-primary" id="canopenBtn" data-protocol="CANOPEN">
+                                    <i class="bi bi-phone me-2"></i>CANOPEN协议 (Mobile)
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 上传进度 -->
+                        <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
+                            <div class="progress mb-2" style="height: 8px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progressFill" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mb-0" id="progressText">上传中...</p>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- 文件列表 -->
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-files me-2"></i>已上传文件
+                        </h5>
+                        <button class="btn btn-outline-success btn-sm" onclick="loadFiles()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>刷新
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="files-list" id="filesList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">加载中...</span>
+                                </div>
+                                <p class="mt-2 text-muted">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据预览 -->
+            <div class="col-12" id="previewSection" style="display: none;">
+                <div class="card shadow-lg">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table me-2"></i>数据预览
+                        </h5>
+                        <button class="btn btn-outline-danger btn-sm" onclick="closePreview()">
+                            <i class="bi bi-x-lg me-1"></i>关闭
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info" id="previewInfo"></div>
+
+                        <div class="row g-3">
+                            <!-- 左侧：消息列表 -->
+                            <div class="col-md-3">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="mb-0" id="sidebarTitle">Available CAN messages</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush" id="messageList"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右侧：统一表格视图 -->
+                            <div class="col-md-9">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover" id="dataTable">
+                                        <thead class="table-dark" id="tableHead"></thead>
+                                        <tbody id="tableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
 
-        <!-- 消息提示 -->
-        <div class="message" id="message"></div>
+        <!-- Toast 消息提示 -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="messageToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="bi bi-info-circle-fill text-primary me-2" id="toastIcon"></i>
+                    <strong class="me-auto">系统消息</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toastBody">
+                    消息内容
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
     <script src="script.js"></script>
 </body>
 </html>

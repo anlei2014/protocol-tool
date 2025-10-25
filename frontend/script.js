@@ -17,7 +17,7 @@ function initializeUpload() {
     // 点击上传区域（排除按钮区域）
     uploadArea.addEventListener('click', (e) => {
         // 如果点击的是按钮，不触发文件选择
-        if (e.target.classList.contains('upload-btn')) {
+        if (e.target.classList.contains('btn')) {
             return;
         }
         fileInput.click();
@@ -70,14 +70,17 @@ function selectProtocol(protocol) {
     selectedProtocol = protocol;
     
     // 更新按钮状态
-    document.querySelectorAll('.protocol-btn').forEach(btn => {
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
+    const canBtn = document.getElementById('canBtn');
+    const canopenBtn = document.getElementById('canopenBtn');
+    
     if (protocol === 'CAN') {
-        document.getElementById('canBtn').classList.add('active');
+        canBtn.classList.add('active');
     } else {
-        document.getElementById('canopenBtn').classList.add('active');
+        canopenBtn.classList.add('active');
     }
     
     showMessage(`已选择 ${protocol} 协议`, 'info');
@@ -156,7 +159,14 @@ function showUploadProgress(show) {
 // 加载文件列表
 async function loadFiles() {
     const filesList = document.getElementById('filesList');
-    filesList.innerHTML = '<div class="loading">加载中...</div>';
+    filesList.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2 text-muted">加载中...</p>
+        </div>
+    `;
 
     try {
         const response = await fetch('/api/files');
@@ -166,10 +176,22 @@ async function loadFiles() {
             currentFiles = result.files || [];
             renderFilesList();
         } else {
-            filesList.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载文件列表失败: ' + result.message + '</p></div>';
+            filesList.innerHTML = `
+                <div class="empty-state">
+                    <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+                    <h5 class="mt-3 text-warning">加载文件列表失败</h5>
+                    <p class="text-muted">${result.message}</p>
+                </div>
+            `;
         }
     } catch (error) {
-        filesList.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>加载文件列表失败: ' + error.message + '</p></div>';
+        filesList.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+                <h5 class="mt-3 text-warning">加载文件列表失败</h5>
+                <p class="text-muted">${error.message}</p>
+            </div>
+        `;
     }
 }
 
@@ -178,20 +200,45 @@ function renderFilesList() {
     const filesList = document.getElementById('filesList');
     
     if (currentFiles.length === 0) {
-        filesList.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>暂无上传的文件</p></div>';
+        filesList.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-folder-x display-1 text-muted"></i>
+                <h5 class="mt-3 text-muted">暂无上传的文件</h5>
+                <p class="text-muted">请先上传CSV文件</p>
+            </div>
+        `;
         return;
     }
 
     filesList.innerHTML = currentFiles.map(file => `
-        <div class="file-item">
-            <div class="file-info">
-                <h4>${file.originalName}</h4>
-                <p>大小: ${formatFileSize(file.size)} | 行数: ${file.rowCount} | 列数: ${file.columnCount} | 上传时间: ${formatDate(file.uploadTime)}</p>
-            </div>
-            <div class="file-actions">
-                <button class="btn btn-primary" onclick="parseFile('${file.filename}', 'CAN')">CAN解析</button>
-                <button class="btn btn-info" onclick="parseFile('${file.filename}', 'CANOPEN')">CANOPEN解析</button>
-                <button class="btn btn-danger" onclick="deleteFile('${file.filename}')">删除</button>
+        <div class="card mb-3 file-item">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="card-title mb-2">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>${file.originalName}
+                        </h6>
+                        <p class="card-text text-muted small mb-0">
+                            <i class="bi bi-hdd me-1"></i>大小: ${formatFileSize(file.size)} | 
+                            <i class="bi bi-list-ol me-1"></i>行数: ${file.rowCount} | 
+                            <i class="bi bi-columns me-1"></i>列数: ${file.columnCount} | 
+                            <i class="bi bi-clock me-1"></i>上传时间: ${formatDate(file.uploadTime)}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-primary btn-sm" onclick="parseFile('${file.filename}', 'CAN')">
+                                <i class="bi bi-tools me-1"></i>CAN解析
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="parseFile('${file.filename}', 'CANOPEN')">
+                                <i class="bi bi-phone me-1"></i>CANOPEN解析
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.filename}')">
+                                <i class="bi bi-trash me-1"></i>删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `).join('');
@@ -251,7 +298,7 @@ function showPreview(data, filename, protocol = 'CAN') {
     tableHead.innerHTML = `
         <tr>
             ${unifiedHeaders.map((h, index) => {
-                const width = index === 0 ? '280px' : 'auto'; // Time列调整为180px宽度
+                const width = index === 0 ? '280px' : 'auto';
                 return `<th style="width: ${width}">${h}<div class="resize-handle"></div></th>`;
             }).join('')}
         </tr>
@@ -314,10 +361,10 @@ function showPreview(data, filename, protocol = 'CAN') {
     }
 
     // 渲染表格数据
-    tableBody.innerHTML = unifiedRows.map((cols, rowIndex) => `
+    tableBody.innerHTML = unifiedRows.map(cols => `
         <tr>
             ${cols.map((cell, colIndex) => {
-                const width = colIndex === 0 ? '280px' : 'auto'; // Time列调整为180px宽度
+                const width = colIndex === 0 ? '280px' : 'auto';
                 return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
             }).join('')}
         </tr>
@@ -333,9 +380,9 @@ function showPreview(data, filename, protocol = 'CAN') {
     // 渲染左侧消息列表（唯一且按字典序）
     const uniqueIds = Array.from(idSet).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
     messageListEl.innerHTML = uniqueIds.map(id => `
-        <li>
+        <div class="list-group-item list-group-item-action">
             <span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
-        </li>
+        </div>
     `).join('');
 }
 
@@ -420,13 +467,31 @@ async function deleteFile(filename) {
 
 // 显示消息提示
 function showMessage(message, type = 'info') {
-    const messageEl = document.getElementById('message');
-    messageEl.textContent = message;
-    messageEl.className = `message ${type} show`;
+    const toastEl = document.getElementById('messageToast');
+    const toastBody = document.getElementById('toastBody');
+    const toastIcon = document.getElementById('toastIcon');
     
-    setTimeout(() => {
-        messageEl.classList.remove('show');
-    }, 3000);
+    // 设置消息内容
+    toastBody.textContent = message;
+    
+    // 设置图标和颜色
+    toastIcon.className = 'me-2';
+    switch(type) {
+        case 'success':
+            toastIcon.classList.add('bi', 'bi-check-circle-fill', 'text-success');
+            break;
+        case 'error':
+            toastIcon.classList.add('bi', 'bi-exclamation-triangle-fill', 'text-danger');
+            break;
+        case 'info':
+        default:
+            toastIcon.classList.add('bi', 'bi-info-circle-fill', 'text-primary');
+            break;
+    }
+    
+    // 显示Toast
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
 }
 
 // 格式化文件大小
