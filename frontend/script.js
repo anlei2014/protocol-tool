@@ -250,9 +250,15 @@ function showPreview(data, filename, protocol = 'CAN') {
     const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data'];
     tableHead.innerHTML = `
         <tr>
-            ${unifiedHeaders.map(h => `<th>${h}</th>`).join('')}
+            ${unifiedHeaders.map((h, index) => {
+                const width = index === 0 ? '280px' : 'auto'; // Time列调整为180px宽度
+                return `<th style="width: ${width}">${h}<div class="resize-handle"></div></th>`;
+            }).join('')}
         </tr>
     `;
+    
+    // 初始化列宽调整功能
+    initializeColumnResize();
 
     // 根据头部名找到相应的列索引（不区分大小写）
     const headerIndex = (name) => {
@@ -308,9 +314,12 @@ function showPreview(data, filename, protocol = 'CAN') {
     }
 
     // 渲染表格数据
-    tableBody.innerHTML = unifiedRows.map(cols => `
+    tableBody.innerHTML = unifiedRows.map((cols, rowIndex) => `
         <tr>
-            ${cols.map(cell => `<td title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`).join('')}
+            ${cols.map((cell, colIndex) => {
+                const width = colIndex === 0 ? '280px' : 'auto'; // Time列调整为180px宽度
+                return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
+            }).join('')}
         </tr>
     `).join('');
 
@@ -328,6 +337,57 @@ function showPreview(data, filename, protocol = 'CAN') {
             <span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
         </li>
     `).join('');
+}
+
+// 初始化列宽调整功能
+function initializeColumnResize() {
+    const table = document.getElementById('dataTable');
+    const headers = table.querySelectorAll('th');
+    
+    headers.forEach((header, index) => {
+        const resizeHandle = header.querySelector('.resize-handle');
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+        
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = header.offsetWidth;
+            header.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const deltaX = e.clientX - startX;
+            const newWidth = Math.max(50, startWidth + deltaX); // 最小宽度50px
+            
+            // 设置当前列宽度
+            header.style.width = newWidth + 'px';
+            
+            // 同时设置所有行的对应列宽度
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cell = row.children[index];
+                if (cell) {
+                    cell.style.width = newWidth + 'px';
+                }
+            });
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                header.classList.remove('resizing');
+                document.body.style.cursor = '';
+            }
+        });
+    });
 }
 
 // 关闭预览
