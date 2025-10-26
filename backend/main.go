@@ -43,9 +43,14 @@ func main() {
 		api.DELETE("/file/:filename", csvHandler.DeleteFile)
 	}
 
-	// 根路径重定向到前端
+	// 根路径直接提供前端index.html
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(302, "/static/index.html")
+		c.File("../frontend/index.html")
+	})
+
+	// 确保index.html可以直接访问
+	r.GET("/index.html", func(c *gin.Context) {
+		c.File("../frontend/index.html")
 	})
 
 	// 启动服务器

@@ -1,6 +1,6 @@
 # CSV解析工具
 
-一个基于Web的CSV文件解析工具，支持多种协议解析、文件上传、数据预览和管理功能。支持CAN协议（FIXED格式）和CANOPEN协议（Mobile格式）的CSV数据解析。
+一个基于Web的CSV文件解析工具，支持多种协议解析、文件上传、数据预览和管理功能。支持CAN协议（FIXED格式）和CANOPEN协议（Mobiled格式）的CSV数据解析。
 
 ## 技术栈
 
@@ -29,7 +29,7 @@ protocol-tool/
 ## 功能特性
 
 ### 🚀 核心功能
-- **多协议解析**：支持CAN协议（FIXED格式）和CANOPEN协议（Mobile格式）
+- **多协议解析**：支持CAN协议（FIXED格式）和CANOPEN协议（Mobiled格式）
 - **文件上传**：支持拖拽和点击上传CSV文件
 - **智能解析**：根据选择的协议自动处理数据格式
 - **数据预览**：表格形式展示解析结果，支持大数据量（显示前100行）
@@ -37,7 +37,7 @@ protocol-tool/
 
 ### 🎯 协议支持
 - **CAN协议（FIXED）**：添加协议类型、消息ID、数据长度等字段
-- **CANOPEN协议（Mobile）**：添加协议类型、节点ID、对象索引、子索引等字段
+- **CANOPEN协议（Mobiled）**：添加协议类型、节点ID、对象索引、子索引等字段
 
 ### 💡 用户体验
 - **响应式界面**：适配不同屏幕尺寸
@@ -119,7 +119,7 @@ start.bat
 
 ### 🔧 协议参数
 - `protocol=CAN` - 使用CAN协议（FIXED格式）解析
-- `protocol=CANOPEN` - 使用CANOPEN协议（Mobile格式）解析
+- `protocol=CANOPEN` - 使用CANOPEN协议（Mobiled格式）解析
 - 默认协议：CAN
 
 ## 技术架构

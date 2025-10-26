@@ -1,9 +1,15 @@
 // 全局变量
 let currentFiles = [];
 let selectedProtocol = 'CAN'; // 默认选择CAN协议
+let unifiedRows = []; // 保存统一视图数据
+let hiddenMessageIds = new Set(); // 隐藏的消息ID集合
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 重置全局变量
+    unifiedRows = [];
+    hiddenMessageIds.clear();
+    
     initializeUpload();
     initializeProtocolSelection();
     loadFiles();
@@ -159,6 +165,8 @@ function showUploadProgress(show) {
 // 加载文件列表
 async function loadFiles() {
     const filesList = document.getElementById('filesList');
+    if (!filesList) return;
+    
     filesList.innerHTML = `
         <div class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
@@ -169,7 +177,19 @@ async function loadFiles() {
     `;
 
     try {
-        const response = await fetch('/api/files');
+        // 添加超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('/api/files', {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         
         if (result.success) {
@@ -180,16 +200,26 @@ async function loadFiles() {
                 <div class="empty-state">
                     <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
                     <h5 class="mt-3 text-warning">加载文件列表失败</h5>
-                    <p class="text-muted">${result.message}</p>
+                    <p class="text-muted">${escapeHtml(result.message || '未知错误')}</p>
                 </div>
             `;
         }
     } catch (error) {
+        console.error('加载文件列表出错:', error);
+        let errorMsg = '无法连接到服务器';
+        
+        if (error.name === 'AbortError') {
+            errorMsg = '请求超时，请检查服务器是否正常运行';
+        } else if (error.message) {
+            errorMsg = error.message;
+        }
+        
         filesList.innerHTML = `
             <div class="empty-state">
                 <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
                 <h5 class="mt-3 text-warning">加载文件列表失败</h5>
-                <p class="text-muted">${error.message}</p>
+                <p class="text-muted">${escapeHtml(errorMsg)}</p>
+                <button class="btn btn-primary btn-sm mt-3" onclick="loadFiles()">重试</button>
             </div>
         `;
     }
@@ -231,7 +261,7 @@ function renderFilesList() {
                                 <i class="bi bi-tools me-1"></i>CAN解析
                             </button>
                             <button class="btn btn-info btn-sm" onclick="parseFile('${file.filename}', 'CANOPEN')">
-                                <i class="bi bi-phone me-1"></i>CANOPEN解析
+                                <i class="bi bi-laptop me-1"></i>CANOPEN解析
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.filename}')">
                                 <i class="bi bi-trash me-1"></i>删除
@@ -261,6 +291,84 @@ async function parseFile(filename, protocol = null) {
     } catch (error) {
         showMessage('解析失败: ' + error.message, 'error');
     }
+}
+
+// 渲染表格（带过滤）
+function renderTable(totalRows) {
+    const tableBody = document.getElementById('tableBody');
+    
+    // 如果 unifiedRows 为空，不渲染
+    if (!unifiedRows || unifiedRows.length === 0) {
+        tableBody.innerHTML = '';
+        return;
+    }
+    
+    // 过滤数据
+    const filteredRows = unifiedRows.filter(item => !hiddenMessageIds.has(item.id));
+    
+    // 渲染表格数据
+    let tableHTML = '';
+    if (filteredRows.length === 0) {
+        tableHTML = `<tr><td colspan="4" style="text-align: center; color: #999;">没有数据</td></tr>`;
+    } else {
+        tableHTML = filteredRows.map(item => {
+            if (!item || !item.row) {
+                return '';
+            }
+            return `
+                <tr>
+                    ${item.row.map((cell, colIndex) => {
+                        const width = colIndex === 0 ? '280px' : 'auto';
+                        return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
+                    }).join('')}
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // 若总数超过100，添加提示
+    if (totalRows > 100) {
+        const hiddenCount = unifiedRows.length - filteredRows.length;
+        tableHTML += `<tr><td colspan="4" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
+    }
+    
+    // 一次性设置innerHTML
+    tableBody.innerHTML = tableHTML;
+}
+
+// 切换消息过滤
+function toggleMessageFilter(messageId) {
+    if (hiddenMessageIds.has(messageId)) {
+        hiddenMessageIds.delete(messageId);
+    } else {
+        hiddenMessageIds.add(messageId);
+    }
+    
+    // 更新UI
+    const messageList = document.getElementById('messageList');
+    if (!messageList || !unifiedRows || unifiedRows.length === 0) {
+        return;
+    }
+    
+    const uniqueIds = Array.from(new Set(unifiedRows.map(item => item.id))).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
+    
+    messageList.innerHTML = uniqueIds.map(id => `
+        <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
+            <span class="message-status-icon"></span><span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
+        </div>
+    `).join('');
+    
+    // 重新绑定点击事件
+    messageList.querySelectorAll('.message-filter-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const id = this.dataset.messageId;
+            toggleMessageFilter(id);
+        });
+    });
+    
+    // 重新渲染表格
+    const totalRows = unifiedRows.length;
+    renderTable(totalRows);
 }
 
 // 显示预览
@@ -321,8 +429,9 @@ function showPreview(data, filename, protocol = 'CAN') {
 
     // 生成统一视图数据
     const maxRows = Math.min(data.rows.length, 100);
-    const unifiedRows = [];
+    unifiedRows = []; // 重置统一视图数据
     const idSet = new Set(); // 左侧唯一消息ID
+    hiddenMessageIds.clear(); // 重置隐藏的消息ID集合
 
     for (let i = 0; i < maxRows; i++) {
         const row = data.rows[i] || [];
@@ -352,7 +461,7 @@ function showPreview(data, filename, protocol = 'CAN') {
         const id = parsedId || name || 'N/A';
         const dataField = parsedData || buffer || '';
 
-        unifiedRows.push([time, fromTo, id, dataField]);
+        unifiedRows.push({ id: id, row: [time, fromTo, id, dataField] });
 
         // 收集唯一ID
         if (id && id !== 'N/A') {
@@ -361,29 +470,23 @@ function showPreview(data, filename, protocol = 'CAN') {
     }
 
     // 渲染表格数据
-    tableBody.innerHTML = unifiedRows.map(cols => `
-        <tr>
-            ${cols.map((cell, colIndex) => {
-                const width = colIndex === 0 ? '280px' : 'auto';
-                return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
-            }).join('')}
-        </tr>
-    `).join('');
-
-    // 若总数超过100，提示
-    if (data.rows.length > 100) {
-        const infoRow = document.createElement('tr');
-        infoRow.innerHTML = `<td colspan="${unifiedHeaders.length}" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${data.rows.length}行数据</td>`;
-        tableBody.appendChild(infoRow);
-    }
+    renderTable(data.rows.length);
 
     // 渲染左侧消息列表（唯一且按字典序）
     const uniqueIds = Array.from(idSet).sort((a,b) => a.localeCompare(b, undefined, {sensitivity:'base'}));
     messageListEl.innerHTML = uniqueIds.map(id => `
-        <div class="list-group-item list-group-item-action">
-            <span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
+        <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
+            <span class="message-status-icon"></span><span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
         </div>
     `).join('');
+
+    // 为每个消息项添加点击事件
+    messageListEl.querySelectorAll('.message-filter-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const messageId = this.dataset.messageId;
+            toggleMessageFilter(messageId);
+        });
+    });
 }
 
 // 初始化列宽调整功能
@@ -511,6 +614,9 @@ function formatDate(dateString) {
 
 // HTML转义
 function escapeHtml(text) {
+    if (text === undefined || text === null) {
+        return '';
+    }
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;

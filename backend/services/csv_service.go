@@ -251,9 +251,9 @@ func (s *CSVService) processCANData(headers []string, rows [][]string) *models.C
 	}
 }
 
-// processCANOPENData 处理CANOPEN协议数据（Mobile格式）
+// processCANOPENData 处理CANOPEN协议数据（Mobiled格式）
 func (s *CSVService) processCANOPENData(headers []string, rows [][]string) *models.CSVData {
-	// CANOPEN协议Mobile格式处理逻辑
+	// CANOPEN协议Mobiled格式处理逻辑
 	// 这里可以根据具体的CANOPEN协议规范进行数据处理
 
 	// 示例：为CANOPEN协议添加特定的列
