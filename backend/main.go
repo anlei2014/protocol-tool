@@ -53,6 +53,11 @@ func main() {
 		c.File("../frontend/index.html")
 	})
 
+	// 预览页面路由
+	r.GET("/preview.html", func(c *gin.Context) {
+		c.File("../frontend/preview.html")
+	})
+
 	// 启动服务器
 	log.Println("Server starting on :8080")
 	if err := r.Run(":8080"); err != nil {

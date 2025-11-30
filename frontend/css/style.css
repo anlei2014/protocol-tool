@@ -1,6 +1,6 @@
 /* 全局样式 */
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #6022A6 0%, #3E166E 100%);
     min-height: 100vh;
 }
 
@@ -11,12 +11,12 @@ body {
 }
 
 .upload-area:hover {
-    border-color: #0d6efd !important;
+    border-color: #6022A6 !important;
     background-color: #f8f9ff;
 }
 
 .upload-area.dragover {
-    border-color: #0d6efd !important;
+    border-color: #6022A6 !important;
     background-color: #f0f4ff;
     transform: scale(1.02);
 }
@@ -30,32 +30,86 @@ body {
     transform: translateX(5px);
 }
 
-/* 表格样式 */
+/* 表格样式 - 修复表头颜色 */
 .table th {
     position: relative;
-}
-
-.table th .resize-handle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 4px;
-    height: 100%;
-    background: #ccc;
-    cursor: col-resize;
-    z-index: 1;
-    border-right: 1px solid #999;
-    user-select: none;
-}
-
-.table th .resize-handle:hover {
-    background: #0d6efd;
-    border-right: 1px solid #0a58ca;
+    background-color: #6022A6 !important;
+    /* 紫色背景 */
+    color: white !important;
+    /* 白色文字 */
+    border-bottom: none !important;
+    font-weight: 600;
+    border-right: 1px solid #fff;
 }
 
 .table th.resizing .resize-handle {
-    background: #0d6efd;
-    border-right: 1px solid #0a58ca;
+    background: #fff;
+    border-right: 1px solid #fff;
+}
+
+/* 侧边栏树形结构样式 */
+#messageList {
+    padding-left: 10px;
+    position: relative;
+}
+
+/* 垂直虚线 - 移除全局虚线 */
+/* #messageList::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 18px;
+    border-left: 1px dashed #adb5bd;
+    z-index: 0;
+} */
+
+/* 列表项样式调整 */
+.list-group-item {
+    border: none !important;
+    padding: 0.5rem 0.5rem 0.5rem 2rem !important;
+    /* 左侧缩进 */
+    background: transparent !important;
+    position: relative;
+    margin-bottom: 2px;
+}
+
+/* 垂直虚线 - 每个项目单独添加 */
+.list-group-item::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed #adb5bd;
+    z-index: 0;
+}
+
+/* 最后一个项目垂直线只到中间 */
+.list-group-item:last-child::after {
+    bottom: 50%;
+}
+
+/* 水平虚线连接 */
+.list-group-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 18px;
+    /* 从垂直线开始 */
+    width: 10px;
+    /* 连接到内容 */
+    border-top: 1px dashed #adb5bd;
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+/* 悬停效果 */
+.list-group-item:hover {
+    background-color: rgba(96, 34, 166, 0.1) !important;
+    border-radius: 4px;
+    color: #6022A6;
+    font-weight: 500;
 }
 
 /* 空状态样式 */
@@ -96,9 +150,395 @@ body {
 }
 
 .message-filter-item .message-status-icon {
-    background-color: #28a745; /* 绿色 - 显示 */
+    background-color: #28a745;
 }
 
 .message-filter-item.filtered .message-status-icon {
-    background-color: #6c757d; /* 灰色 - 隐藏 */
+    background-color: #6c757d;
+}
+
+/* 协议选择器样式 */
+.protocol-selector {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.95) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.protocol-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.protocol-label i {
+    color: #6022A6;
+    font-size: 1.1rem;
+}
+
+.protocol-toggle-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.protocol-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: white;
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.protocol-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(96, 34, 166, 0.1) 0%, rgba(62, 22, 110, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.protocol-btn:hover {
+    border-color: #6022A6;
+    color: #6022A6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(96, 34, 166, 0.2);
+}
+
+.protocol-btn:hover::before {
+    opacity: 1;
+}
+
+.protocol-btn.active {
+    color: white;
+    background: linear-gradient(135deg, #6022A6 0%, #4a1a82 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(96, 34, 166, 0.4);
+}
+
+.protocol-btn.active::before {
+    opacity: 0;
+}
+
+.protocol-btn i {
+    font-size: 1rem;
+    transition: transform 0.25s ease;
+}
+
+.protocol-btn:hover i {
+    transform: scale(1.1);
+}
+
+.protocol-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.bg-primary {
+    background-color: #6022A6 !important;
+}
+
+.btn-primary {
+    background-color: #6022A6 !important;
+    border-color: #6022A6 !important;
+}
+
+.btn-primary:hover {
+    background-color: #4a1a82 !important;
+    border-color: #4a1a82 !important;
+}
+
+.btn-outline-primary {
+    color: #6022A6 !important;
+    border-color: #6022A6 !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #6022A6 !important;
+    color: white !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(96, 34, 166, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(96, 34, 166, 0.6);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .protocol-selector {
+        padding: 0.875rem 1rem;
+    }
+
+    .protocol-selector>div {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start !important;
+    }
+
+    .protocol-toggle-group {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .protocol-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+transition: all 0.2s ease;
+}
+
+.message-filter-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.message-filter-item.filtered {
+    opacity: 0.5;
+    text-decoration: line-through;
+    color: #999;
+}
+
+.message-filter-item.filtered:hover {
+    opacity: 0.7;
+}
+
+/* 消息状态图标 */
+.message-status-icon {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.message-filter-item .message-status-icon {
+    background-color: #28a745;
+}
+
+.message-filter-item.filtered .message-status-icon {
+    background-color: #6c757d;
+}
+
+/* 协议选择器样式 */
+.protocol-selector {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.95) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.protocol-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.protocol-label i {
+    color: #6022A6;
+    font-size: 1.1rem;
+}
+
+.protocol-toggle-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.protocol-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6c757d;
+    background: white;
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.protocol-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(96, 34, 166, 0.1) 0%, rgba(62, 22, 110, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.protocol-btn:hover {
+    border-color: #6022A6;
+    color: #6022A6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(96, 34, 166, 0.2);
+}
+
+.protocol-btn:hover::before {
+    opacity: 1;
+}
+
+.protocol-btn.active {
+    color: white;
+    background: linear-gradient(135deg, #6022A6 0%, #4a1a82 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(96, 34, 166, 0.4);
+}
+
+.protocol-btn.active::before {
+    opacity: 0;
+}
+
+.protocol-btn i {
+    font-size: 1rem;
+    transition: transform 0.25s ease;
+}
+
+.protocol-btn:hover i {
+    transform: scale(1.1);
+}
+
+.protocol-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.bg-primary {
+    background-color: #6022A6 !important;
+}
+
+.btn-primary {
+    background-color: #6022A6 !important;
+    border-color: #6022A6 !important;
+}
+
+.btn-primary:hover {
+    background-color: #4a1a82 !important;
+    border-color: #4a1a82 !important;
+}
+
+.btn-outline-primary {
+    color: #6022A6 !important;
+    border-color: #6022A6 !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #6022A6 !important;
+    color: white !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(96, 34, 166, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(96, 34, 166, 0.6);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .protocol-selector {
+        padding: 0.875rem 1rem;
+    }
+
+    .protocol-selector>div {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start !important;
+    }
+
+    .protocol-toggle-group {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .protocol-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* 菜单栏容器 - 确保层级高于内容 */
+.navbar {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    position: relative;
+    z-index: 2000;
+    /* Increased to ensure it's above sticky headers */
+}
+
+@media (max-width: 992px) {
+    .navbar {
+        border-radius: 8px;
+    }
+
+    .navbar-nav {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .dropdown-menu {
+        background: rgba(255, 255, 255, 0.95);
+    }
 }

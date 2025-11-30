@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据预览 - CSV解析工具</title>
+    <!-- Bootstrap CSS - 使用本地文件 -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons - 使用本地文件 -->
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css?v=3">
+</head>
+
+<body>
+    <div class="d-flex flex-column vh-100">
+        <!-- Header - 紧凑设计 -->
+        <header class="text-center text-white py-2 flex-shrink-0">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <a href="/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>返回
+                </a>
+                <div>
+                    <h5 class="fw-bold mb-0">数据预览 <small class="text-white-50" id="pageSubtitle"></small></h5>
+                </div>
+                <div style="width: 80px;"></div>
+            </div>
+        </header>
+
+        <!-- 功能菜单栏 -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm flex-shrink-0 mx-2 mb-2">
+            <div class="container-fluid">
+                <ul class="navbar-nav me-auto mb-0">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-folder me-1"></i>File
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportData('csv')"><i
+                                        class="bi bi-file-earmark-spreadsheet me-2"></i>导出为 CSV</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportData('json')"><i
+                                        class="bi bi-file-earmark-code me-2"></i>导出为 JSON</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/"><i class="bi bi-house me-2"></i>返回首页</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-cpu me-1"></i>Decode
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="switchProtocol('CAN')"><i
+                                        class="bi bi-cpu me-2"></i>CAN 协议</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="switchProtocol('CANOPEN')"><i
+                                        class="bi bi-hdd-network me-2"></i>CANOPEN 协议</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-clock me-1"></i>Time
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="setTimeFormat('absolute')"><i
+                                        class="bi bi-calendar-event me-2"></i>绝对时间</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setTimeFormat('relative')"><i
+                                        class="bi bi-stopwatch me-2"></i>相对时间</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-chat-dots me-1"></i>Messages
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="filterMessagesByType('all')"><i
+                                        class="bi bi-list me-2"></i>显示全部</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterMessagesByType('receive')"><i
+                                        class="bi bi-download me-2"></i>仅接收</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="filterMessagesByType('publish')"><i
+                                        class="bi bi-upload me-2"></i>仅发布</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#" onclick="clearFilters()"><i
+                                        class="bi bi-x-circle me-2"></i>清除过滤</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="toggleSidebar()"><i
+                                        class="bi bi-layout-sidebar me-2"></i>切换侧边栏</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleFullscreen()"><i
+                                        class="bi bi-arrows-fullscreen me-2"></i>全屏模式</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#" onclick="zoomIn()"><i
+                                        class="bi bi-zoom-in me-2"></i>放大</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="zoomOut()"><i
+                                        class="bi bi-zoom-out me-2"></i>缩小</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="resetZoom()"><i
+                                        class="bi bi-arrow-counterclockwise me-2"></i>重置缩放</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-window me-1"></i>Window
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="refreshData()"><i
+                                        class="bi bi-arrow-clockwise me-2"></i>刷新数据</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="window.print()"><i
+                                        class="bi bi-printer me-2"></i>打印</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-graph-up me-1"></i>Graphs
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="showGraph('timeline')"><i
+                                        class="bi bi-bar-chart-line me-2"></i>时间线图</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showGraph('distribution')"><i
+                                        class="bi bi-pie-chart me-2"></i>分布图</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showGraph('statistics')"><i
+                                        class="bi bi-graph-up-arrow me-2"></i>统计图</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-question-circle me-1"></i>Help
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="showHelp()"><i
+                                        class="bi bi-book me-2"></i>使用帮助</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showAbout()"><i
+                                        class="bi bi-info-circle me-2"></i>关于</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <!-- 右侧工具栏 -->
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-info me-2" id="fileName">加载中...</span>
+                    <span class="badge bg-secondary me-2" id="previewInfo">正在加载...</span>
+                    <div class="input-group input-group-sm" style="width: 200px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="搜索..." id="searchInput"
+                            onkeyup="searchMessages()">
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 数据预览区域 - 全屏自适应 -->
+        <div class="container-fluid flex-grow-1 overflow-hidden mb-2 px-2">
+            <div class="row h-100 g-2">
+                <div class="col-12 h-100">
+                    <div class="card shadow h-100 border-0">
+                        <div class="card-body p-0 h-100">
+                            <div class="row g-0 h-100">
+                                <!-- 左侧：消息列表 -->
+                                <div class="col-md-2 h-100 border-end d-flex flex-column" id="sidebarColumn">
+                                    <div class="card-header py-2 bg-light border-bottom">
+                                        <h6 class="mb-0 small fw-bold" id="sidebarTitle">Available CAN messages</h6>
+                                    </div>
+                                    <div class="flex-grow-1 overflow-auto" id="messageList">
+                                        <div class="text-center py-4">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 右侧：统一表格视图 -->
+                                <div class="col-md-10 h-100 d-flex flex-column" id="tableColumn">
+                                    <div class="table-responsive flex-grow-1">
+                                        <table class="table table-sm table-striped table-hover mb-0" id="dataTable">
+                                            <thead class="table-dark sticky-top" id="tableHead">
+                                                <tr>
+                                                    <th colspan="4" class="text-center">
+                                                        <div class="spinner-border spinner-border-sm text-light"
+                                                            role="status">
+                                                            <span class="visually-hidden">加载中...</span>
+                                                        </div>
+                                                        <span class="ms-2">正在加载数据...</span>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tableBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast 消息提示 -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="messageToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="bi bi-info-circle-fill text-primary me-2" id="toastIcon"></i>
+                    <strong class="me-auto">系统消息</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toastBody">
+                    消息内容
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS - 使用本地文件 -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <!-- Preview JS -->
+    <script src="/static/js/preview.js"></script>
+    <!-- Menu Functions JS -->
+    <script src="/static/js/menu-functions.js"></script>
+</body>
+
+</html>
