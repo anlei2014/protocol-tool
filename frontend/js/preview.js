@@ -91,11 +91,12 @@ function showPreview(data, filename, protocol = 'CAN') {
     const idxTarget = headerIndex('Target');
     const idxName = headerIndex('Name');
     const idxBuffer = headerIndex('Buffer');
+    const idxMeaning = headerIndex('Meaning');
 
     // 生成统一视图数据
     const maxRows = Math.min(data.rows.length, 100);
     unifiedRows = []; // 重置统一视图数据
-    const idSet = new Set(); // 左侧唯一消息ID
+    const idMeaningMap = new Map(); // 左侧唯一消息ID和Meaning的映射
     hiddenMessageIds.clear(); // 重置隐藏的消息ID集合
 
     for (let i = 0; i < maxRows; i++) {
@@ -105,6 +106,7 @@ function showPreview(data, filename, protocol = 'CAN') {
         const target = idxTarget >= 0 ? (row[idxTarget] || '') : '';
         const name = idxName >= 0 ? (row[idxName] || '') : '';
         const buffer = idxBuffer >= 0 ? (row[idxBuffer] || '') : '';
+        const meaning = idxMeaning >= 0 ? (row[idxMeaning] || '') : '';
 
         // 解析 Buffer: 形如 string=2cf:8:[10 40 ff 37 48 c1 0a 00]
         let parsedId = '';
@@ -128,9 +130,12 @@ function showPreview(data, filename, protocol = 'CAN') {
 
         unifiedRows.push({ id: id, row: [time, fromTo, id, dataField] });
 
-        // 收集唯一ID
+        // 收集唯一ID和对应的Meaning
         if (id && id !== 'N/A') {
-            idSet.add(id);
+            // 如果这个ID还没有存储过，或者当前的meaning不为空，则更新
+            if (!idMeaningMap.has(id) || meaning) {
+                idMeaningMap.set(id, meaning);
+            }
         }
     }
 
@@ -141,12 +146,19 @@ function showPreview(data, filename, protocol = 'CAN') {
     initializeColumnResize();
 
     // 渲染左侧消息列表（唯一且按字典序）
-    const uniqueIds = Array.from(idSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    messageListEl.innerHTML = uniqueIds.map(id => `
+    const uniqueIds = Array.from(idMeaningMap.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    messageListEl.innerHTML = uniqueIds.map(id => {
+        const meaning = idMeaningMap.get(id);
+        // 格式化显示：0xID - Meaning (如果有meaning的话)
+        const displayId = '0x' + id.toUpperCase();
+        const displayText = meaning ? `${displayId} - ${meaning}` : displayId;
+
+        return `
         <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
-            <span class="message-status-icon"></span><span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
+            <span class="message-status-icon"></span><span title="${escapeHtml(displayText)}">${escapeHtml(displayText)}</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     // 为每个消息项添加点击事件
     messageListEl.querySelectorAll('.message-filter-item').forEach(item => {

@@ -3,6 +3,7 @@ package services
 import (
 	"csv-parser/models"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -225,13 +226,46 @@ func (s *CSVService) processDataByProtocol(headers []string, rows [][]string, pr
 	}
 }
 
+// loadCANDefinitions 加载CAN ID定义
+func (s *CSVService) loadCANDefinitions() (map[string]string, error) {
+	configPath := filepath.Join("config", "can_definitions.json")
+	file, err := os.ReadFile(configPath)
+	if err != nil {
+		// 如果配置文件不存在,返回空map
+		return make(map[string]string), nil
+	}
+
+	var definitions map[string]string
+	if err := json.Unmarshal(file, &definitions); err != nil {
+		return nil, fmt.Errorf("解析can_definitions.json失败: %v", err)
+	}
+
+	return definitions, nil
+}
+
 // processCANData 处理CAN协议数据（FIXED格式）
 func (s *CSVService) processCANData(headers []string, rows [][]string) *models.CSVData {
-	// CAN协议FIXED格式处理逻辑
-	// 这里可以根据具体的CAN协议规范进行数据处理
+	// 加载CAN定义
+	canDefinitions, err := s.loadCANDefinitions()
+	if err != nil {
+		// 如果加载失败,打印错误但继续处理
+		fmt.Printf("Warning: 无法加载CAN定义: %v\n", err)
+		canDefinitions = make(map[string]string)
+	}
 
-	// 示例：为CAN协议添加特定的列
+	// CAN协议FIXED格式处理逻辑
+	// 为CAN协议添加特定的列,包括Meaning
 	canHeaders := append([]string{"协议类型", "消息ID", "数据长度"}, headers...)
+	canHeaders = append(canHeaders, "Meaning")
+
+	// 找到Buffer列的索引
+	bufferIdx := -1
+	for i, h := range headers {
+		if strings.ToLower(h) == "buffer" {
+			bufferIdx = i
+			break
+		}
+	}
 
 	var canRows [][]string
 	for _, row := range rows {
@@ -242,6 +276,26 @@ func (s *CSVService) processCANData(headers []string, rows [][]string) *models.C
 			fmt.Sprintf("%d", len(row)),          // 数据长度
 		}
 		canRow = append(canRow, row...)
+
+		// 尝试从Buffer字段解析ID并查找Meaning
+		meaning := ""
+		if bufferIdx >= 0 && bufferIdx < len(row) {
+			buffer := row[bufferIdx]
+			// 解析Buffer: 形如string=2cf:8:[10 40 ff 37 48 c1 0a 00]
+			if strings.Contains(buffer, "string=") {
+				// 提取ID部分
+				parts := strings.Split(buffer, ":")
+				if len(parts) >= 1 {
+					idPart := strings.TrimPrefix(parts[0], "string=")
+					idPart = strings.TrimSpace(idPart)
+					// 查找定义
+					if def, exists := canDefinitions[strings.ToLower(idPart)]; exists {
+						meaning = def
+					}
+				}
+			}
+		}
+		canRow = append(canRow, meaning)
 		canRows = append(canRows, canRow)
 	}
 
