@@ -1,4 +1,69 @@
 {
+  "1cc": {
+    "hex": "1cc",
+    "dec": "460",
+    "description": "Set Acquisition Command"
+  },
+  "1d0": {
+    "hex": "1d0",
+    "dec": "464",
+    "description": "Notify Exam Event"
+  },
+  "1d6": {
+    "hex": "1d6",
+    "dec": "470",
+    "description": "Set Extra Parameters"
+  },
+  "1d7": {
+    "hex": "1d7",
+    "dec": "471",
+    "description": "Confirm Extra Parameters"
+  },
+  "1e0": {
+    "hex": "1e0",
+    "dec": "480",
+    "description": "Set Record Parameters"
+  },
+  "1e1": {
+    "hex": "1e1",
+    "dec": "481",
+    "description": "set Limited Parameters"
+  },
+  "1e2": {
+    "hex": "1e2",
+    "dec": "482",
+    "description": "Set Fine Parameters"
+  },
+  "1e3": {
+    "hex": "1e3",
+    "dec": "483",
+    "description": "Set Limited Fine Parameters"
+  },
+  "1e4": {
+    "hex": "1e4",
+    "dec": "484",
+    "description": "Set Prediction Param"
+  },
+  "1e5": {
+    "hex": "1e5",
+    "dec": "485",
+    "description": "Set Prediction Result"
+  },
+  "1e6": {
+    "hex": "1e6",
+    "dec": "486",
+    "description": "Set Allowed Number of Exposures"
+  },
+  "1e8": {
+    "hex": "1e8",
+    "dec": "488",
+    "description": "Update SC Parameters"
+  },
+  "1e9": {
+    "hex": "1e9",
+    "dec": "489",
+    "description": "Update SC Parameters"
+  },
   "2cf": {
     "hex": "2cf",
     "dec": "719",
