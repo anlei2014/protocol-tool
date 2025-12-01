@@ -1,5 +1,17 @@
 {
-  "2cf": "Reply Thermal State",
-  "1f0": "Configure AEC",
-  "4be": "Example Message 4be"
+  "2cf": {
+    "hex": "2cf",
+    "dec": "719",
+    "description": "Reply Thermal State"
+  },
+  "1f0": {
+    "hex": "1f0",
+    "dec": "496",
+    "description": "Configure AEC"
+  },
+  "4be": {
+    "hex": "4be",
+    "dec": "1214",
+    "description": "Example Message 4be"
+  }
 }

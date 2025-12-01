@@ -541,4 +541,67 @@ transition: all 0.2s ease;
     .dropdown-menu {
         background: rgba(255, 255, 255, 0.95);
     }
+}/* 列宽调整手柄样式 - 优雅渐隐�?�?*/
+.table th .resize-handle {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to right,
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0.15),
+            rgba(255, 255, 255, 0));
+    cursor: col-resize;
+    z-index: 10;
+    user-select: none;
+    opacity: 0.3;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 中心指示�?*/
+.table th .resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 30px;
+    background: linear-gradient(to bottom,
+            transparent,
+            rgba(255, 255, 255, 0.5),
+            transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 悬停效果 - 变亮 */
+.table th:hover .resize-handle {
+    opacity: 1;
+    background: linear-gradient(to right,
+            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.4),
+            rgba(255, 255, 255, 0.1));
+}
+
+.table th:hover .resize-handle::before {
+    opacity: 1;
+}
+
+/* 调整中状�?- 发光效果 */
+.table th.resizing .resize-handle {
+    opacity: 1;
+    width: 6px;
+    background: linear-gradient(to right,
+            rgba(255, 255, 255, 0.2),
+            rgba(255, 255, 255, 0.8),
+            rgba(255, 255, 255, 0.2));
+    box-shadow:
+        0 0 10px rgba(255, 255, 255, 0.5),
+        0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.table th.resizing .resize-handle::before {
+    opacity: 0;
 }

@@ -1,9 +1,28 @@
 // 全局变量
 let unifiedRows = []; // 保存统一视图数据
 let hiddenMessageIds = new Set(); // 隐藏的消息ID集合
+let canDefinitions = {}; // CAN消息定义
+
+// 加载CAN定义
+async function loadCanDefinitions() {
+    try {
+        const response = await fetch('/config/can_definitions.json');
+        if (response.ok) {
+            canDefinitions = await response.json();
+        } else {
+            console.warn('无法加载CAN定义文件');
+            canDefinitions = {};
+        }
+    } catch (error) {
+        console.warn('加载CAN定义失败:', error);
+        canDefinitions = {};
+    }
+}
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    // 先加载CAN定义
+    await loadCanDefinitions();
     // 从URL参数获取文件名和协议
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
@@ -93,6 +112,36 @@ function showPreview(data, filename, protocol = 'CAN') {
     const idxBuffer = headerIndex('Buffer');
     const idxMeaning = headerIndex('Meaning');
 
+    // 辅助函数：检查ID是否在can_definitions中
+    const isIdInDefinitions = (id) => {
+        // 如果canDefinitions为空对象，则接受所有ID（向后兼容）
+        if (Object.keys(canDefinitions).length === 0) {
+            return true;
+        }
+
+        // 忽略N/A
+        if (!id || id === 'N/A') {
+            return false;
+        }
+
+        const idLower = id.toLowerCase();
+
+        // 检查十六进制形式
+        if (canDefinitions.hasOwnProperty(idLower)) {
+            return true;
+        }
+
+        // 检查十进制形式
+        for (const key in canDefinitions) {
+            const def = canDefinitions[key];
+            if (typeof def === 'object' && (def.dec === id || def.hex === idLower)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     // 生成统一视图数据
     const maxRows = Math.min(data.rows.length, 100);
     unifiedRows = []; // 重置统一视图数据
@@ -128,13 +177,16 @@ function showPreview(data, filename, protocol = 'CAN') {
         const id = parsedId || name || 'N/A';
         const dataField = parsedData || buffer || '';
 
-        unifiedRows.push({ id: id, row: [time, fromTo, id, dataField] });
+        // 只添加在can_definitions中定义的ID的行
+        if (isIdInDefinitions(id)) {
+            unifiedRows.push({ id: id, row: [time, fromTo, id, dataField] });
 
-        // 收集唯一ID和对应的Meaning
-        if (id && id !== 'N/A') {
-            // 如果这个ID还没有存储过，或者当前的meaning不为空，则更新
-            if (!idMeaningMap.has(id) || meaning) {
-                idMeaningMap.set(id, meaning);
+            // 收集唯一ID和对应的Meaning
+            if (id && id !== 'N/A') {
+                // 如果这个ID还没有存储过，或者当前的meaning不为空，则更新
+                if (!idMeaningMap.has(id) || meaning) {
+                    idMeaningMap.set(id, meaning);
+                }
             }
         }
     }
@@ -146,12 +198,37 @@ function showPreview(data, filename, protocol = 'CAN') {
     initializeColumnResize();
 
     // 渲染左侧消息列表（唯一且按字典序）
-    const uniqueIds = Array.from(idMeaningMap.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    // idMeaningMap中已经只包含在can_definitions.json中定义的CAN ID
+    const uniqueIds = Array.from(idMeaningMap.keys())
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
     messageListEl.innerHTML = uniqueIds.map(id => {
-        const meaning = idMeaningMap.get(id);
-        // 格式化显示：0xID - Meaning (如果有meaning的话)
+        // 从can_definitions获取描述（优先），否则使用CSV中的meaning
+        let description = idMeaningMap.get(id);
+        const idLower = id.toLowerCase();
+
+        // 尝试从canDefinitions中获取更详细的信息
+        if (canDefinitions[idLower]) {
+            const def = canDefinitions[idLower];
+            if (typeof def === 'object' && def.description) {
+                description = def.description;
+            } else if (typeof def === 'string') {
+                description = def;
+            }
+        } else {
+            // 如果直接匹配失败，尝试通过dec字段匹配
+            for (const key in canDefinitions) {
+                const def = canDefinitions[key];
+                if (typeof def === 'object' && def.dec === id) {
+                    description = def.description;
+                    break;
+                }
+            }
+        }
+
+        // 格式化显示：0xID - Description
         const displayId = '0x' + id.toUpperCase();
-        const displayText = meaning ? `${displayId} - ${meaning}` : displayId;
+        const displayText = description ? `${displayId} - ${description}` : displayId;
 
         return `
         <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
@@ -245,6 +322,9 @@ function toggleMessageFilter(messageId) {
     // 重新渲染表格
     const totalRows = unifiedRows.length;
     renderTable(totalRows);
+
+    // 重新初始化列宽调整功能
+    initializeColumnResize();
 }
 
 // 初始化列宽调整功能
@@ -257,6 +337,14 @@ function initializeColumnResize() {
     headers.forEach((header, index) => {
         const resizeHandle = header.querySelector('.resize-handle');
         if (!resizeHandle) return;
+
+        // 如果已经初始化过，先移除旧的标记
+        if (resizeHandle.dataset.initialized === 'true') {
+            return;
+        }
+
+        // 标记为已初始化
+        resizeHandle.dataset.initialized = 'true';
 
         let isResizing = false;
         let startX = 0;

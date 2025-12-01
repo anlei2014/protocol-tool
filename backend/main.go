@@ -33,6 +33,7 @@ func main() {
 	// 静态文件服务
 	r.Static("/static", "../frontend")
 	r.Static("/uploads", "../uploads")
+	r.Static("/config", "./config")
 
 	// API路由
 	api := r.Group("/api")
