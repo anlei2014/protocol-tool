@@ -1,13 +1,13 @@
 {
     "rules": {
         "FROM_JEDI_MSG": {
-            "from": "Jedi",
+            "from": "Generator",
             "to": "System",
             "description": "来自Jedi的消息"
         },
         "TO_JEDI_MSG": {
             "from": "System",
-            "to": "Jedi",
+            "to": "Generator",
             "description": "发送到Jedi的消息"
         },
         "FROM_SYSTEM_MSG": {
@@ -19,6 +19,26 @@
             "from": "External",
             "to": "System",
             "description": "发送到系统的消息"
+        },
+        "RTB0_EXP_ENABLE_HI": {
+            "from": "RTB",
+            "to": "System",
+            "description": "RTB曝光使能高信号"
+        },
+        "RTB1_EXP_CMD_HI": {
+            "from": "RTB",
+            "to": "System",
+            "description": "RTB曝光使能高信号"
+        },
+        "RTB2_XRAY_ON_HI": {
+            "from": "RTB",
+            "to": "System",
+            "description": "RTB曝光使能高信号"
+        },
+        "RTB2_XRAY_ON_LO": {
+            "from": "RTB",
+            "to": "System",
+            "description": "RTB曝光使能高信号"
         }
     },
     "separator": " => ",

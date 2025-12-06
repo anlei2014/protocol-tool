@@ -2,6 +2,7 @@
 let unifiedRows = []; // 保存统一视图数据
 let hiddenMessageIds = new Set(); // 隐藏的消息ID集合
 let canDefinitions = {}; // CAN消息定义
+let nameDefinitions = {}; // Name字段到Id描述的映射
 let rowHighlightConfig = { highlights: [] }; // 行高亮配置
 let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
 
@@ -18,6 +19,22 @@ async function loadCanDefinitions() {
     } catch (error) {
         console.warn('加载CAN定义失败:', error);
         canDefinitions = {};
+    }
+}
+
+// 加载Name定义
+async function loadNameDefinitions() {
+    try {
+        const response = await fetch('/config/name_definitions.json');
+        if (response.ok) {
+            nameDefinitions = await response.json();
+        } else {
+            console.warn('无法加载Name定义文件');
+            nameDefinitions = {};
+        }
+    } catch (error) {
+        console.warn('加载Name定义失败:', error);
+        nameDefinitions = {};
     }
 }
 
@@ -186,7 +203,7 @@ function applyTableStyles() {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
     // 先加载所有配置
-    await Promise.all([loadCanDefinitions(), loadRowHighlightConfig(), loadFromToMapping(), loadTableStyleConfig()]);
+    await Promise.all([loadCanDefinitions(), loadNameDefinitions(), loadRowHighlightConfig(), loadFromToMapping(), loadTableStyleConfig()]);
     // 从URL参数获取文件名和协议
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
@@ -277,16 +294,59 @@ function showPreview(data, filename, protocol = 'CAN') {
     const idxBuffer = headerIndex('Buffer');
     const idxMeaning = headerIndex('Meaning');
 
-    // 辅助函数：检查ID是否在can_definitions中
-    const isIdInDefinitions = (id) => {
-        // 如果canDefinitions为空对象，则接受所有ID（向后兼容）
-        if (Object.keys(canDefinitions).length === 0) {
-            return true;
+    // 辅助函数：根据ID获取description
+    const getDescriptionById = (id) => {
+        if (!id || id === 'N/A') {
+            return id;
         }
 
+        // 首先检查nameDefinitions（用于RTB等非CAN消息）
+        if (nameDefinitions.definitions && nameDefinitions.definitions[id]) {
+            const def = nameDefinitions.definitions[id];
+            if (def.description) {
+                return def.description;
+            }
+        }
+
+        const idLower = id.toLowerCase();
+
+        // 尝试直接通过hex匹配canDefinitions
+        if (canDefinitions[idLower]) {
+            const def = canDefinitions[idLower];
+            if (typeof def === 'object' && def.description) {
+                return def.description;
+            } else if (typeof def === 'string') {
+                return def;
+            }
+        }
+
+        // 尝试通过dec字段匹配canDefinitions
+        for (const key in canDefinitions) {
+            const def = canDefinitions[key];
+            if (typeof def === 'object' && def.dec === id) {
+                return def.description || id;
+            }
+        }
+
+        return id; // 如果找不到description，返回原始ID
+    };
+
+    // 辅助函数：检查ID是否应该显示（在任一定义文件中存在）
+    const isIdInDefinitions = (id) => {
         // 忽略N/A
         if (!id || id === 'N/A') {
             return false;
+        }
+
+        // 检查nameDefinitions
+        if (nameDefinitions.definitions && nameDefinitions.definitions[id]) {
+            return true;
+        }
+
+        // 如果canDefinitions为空对象且nameDefinitions也为空，则接受所有ID（向后兼容）
+        if (Object.keys(canDefinitions).length === 0 &&
+            (!nameDefinitions.definitions || Object.keys(nameDefinitions.definitions).length === 0)) {
+            return true;
         }
 
         const idLower = id.toLowerCase();
@@ -305,35 +365,6 @@ function showPreview(data, filename, protocol = 'CAN') {
         }
 
         return false;
-    };
-
-    // 辅助函数：根据ID获取description
-    const getDescriptionById = (id) => {
-        if (!id || id === 'N/A') {
-            return id;
-        }
-
-        const idLower = id.toLowerCase();
-
-        // 尝试直接通过hex匹配
-        if (canDefinitions[idLower]) {
-            const def = canDefinitions[idLower];
-            if (typeof def === 'object' && def.description) {
-                return def.description;
-            } else if (typeof def === 'string') {
-                return def;
-            }
-        }
-
-        // 尝试通过dec字段匹配
-        for (const key in canDefinitions) {
-            const def = canDefinitions[key];
-            if (typeof def === 'object' && def.dec === id) {
-                return def.description || id;
-            }
-        }
-
-        return id; // 如果找不到description，返回原始ID
     };
 
     // 生成统一视图数据
@@ -394,16 +425,24 @@ function showPreview(data, filename, protocol = 'CAN') {
     initializeColumnResize();
 
     // 渲染左侧消息列表（唯一且按字典序）
-    // idMeaningMap中已经只包含在can_definitions.json中定义的CAN ID
-    const uniqueIds = Array.from(idMeaningMap.keys())
-        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    // 收集显示ID（支持virtualId合并显示）
+    const displayIdMap = new Map(); // displayId -> { ids: Set, description: string }
 
-    messageListEl.innerHTML = uniqueIds.map(id => {
-        // 从can_definitions获取描述（优先），否则使用CSV中的meaning
+    Array.from(idMeaningMap.keys()).forEach(id => {
+        let displayId = id;
         let description = idMeaningMap.get(id);
-        const idLower = id.toLowerCase();
 
-        // 尝试从canDefinitions中获取更详细的信息
+        // 检查nameDefinitions是否有virtualId
+        if (nameDefinitions.definitions && nameDefinitions.definitions[id]) {
+            const def = nameDefinitions.definitions[id];
+            if (def.virtualId !== undefined) {
+                displayId = def.virtualId;
+                description = def.description;
+            }
+        }
+
+        // 检查canDefinitions
+        const idLower = id.toLowerCase();
         if (canDefinitions[idLower]) {
             const def = canDefinitions[idLower];
             if (typeof def === 'object' && def.description) {
@@ -412,7 +451,6 @@ function showPreview(data, filename, protocol = 'CAN') {
                 description = def;
             }
         } else {
-            // 如果直接匹配失败，尝试通过dec字段匹配
             for (const key in canDefinitions) {
                 const def = canDefinitions[key];
                 if (typeof def === 'object' && def.dec === id) {
@@ -422,12 +460,31 @@ function showPreview(data, filename, protocol = 'CAN') {
             }
         }
 
+        // 合并到displayIdMap
+        if (!displayIdMap.has(displayId)) {
+            displayIdMap.set(displayId, { ids: new Set(), description: description });
+        }
+        displayIdMap.get(displayId).ids.add(id);
+    });
+
+    // 按显示ID排序
+    const sortedDisplayIds = Array.from(displayIdMap.keys())
+        .sort((a, b) => a.toString().localeCompare(b.toString(), undefined, { sensitivity: 'base' }));
+
+    messageListEl.innerHTML = sortedDisplayIds.map(displayId => {
+        const info = displayIdMap.get(displayId);
+        const description = info.description;
+        const originalIds = Array.from(info.ids);
+
         // 格式化显示：0xID - Description
-        const displayId = '0x' + id.toUpperCase();
-        const displayText = description ? `${displayId} - ${description}` : displayId;
+        const formattedId = '0x' + displayId.toString().toUpperCase();
+        const displayText = description ? `${formattedId} - ${description}` : formattedId;
+
+        // 检查是否所有关联的原始ID都被隐藏
+        const isFiltered = originalIds.every(id => hiddenMessageIds.has(id));
 
         return `
-        <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
+        <div class="list-group-item list-group-item-action message-filter-item ${isFiltered ? 'filtered' : ''}" data-message-id="${escapeHtml(originalIds.join(','))}" data-display-id="${escapeHtml(displayId)}">
             <span class="message-status-icon"></span><span title="${escapeHtml(displayText)}">${escapeHtml(displayText)}</span>
         </div>
     `;
@@ -495,13 +552,22 @@ function renderTable(totalRows) {
     tableBody.innerHTML = tableHTML;
 }
 
-// 切换消息过滤
-function toggleMessageFilter(messageId) {
-    if (hiddenMessageIds.has(messageId)) {
-        hiddenMessageIds.delete(messageId);
-    } else {
-        hiddenMessageIds.add(messageId);
-    }
+// 切换消息过滤（支持逗号分隔的多个ID）
+function toggleMessageFilter(messageIdStr) {
+    // 解析逗号分隔的ID列表
+    const messageIds = messageIdStr.split(',').map(id => id.trim()).filter(id => id);
+
+    // 检查是否所有ID都被隐藏
+    const allHidden = messageIds.every(id => hiddenMessageIds.has(id));
+
+    // 切换所有关联的ID
+    messageIds.forEach(id => {
+        if (allHidden) {
+            hiddenMessageIds.delete(id);
+        } else {
+            hiddenMessageIds.add(id);
+        }
+    });
 
     // 更新UI
     const messageList = document.getElementById('messageList');
@@ -509,14 +575,25 @@ function toggleMessageFilter(messageId) {
         return;
     }
 
-    const uniqueIds = Array.from(new Set(unifiedRows.map(item => item.id))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    // 重新构建displayIdMap（与showPreview中相同的逻辑）
+    const displayIdMap = new Map();
+    const allIds = Array.from(new Set(unifiedRows.map(item => item.id)));
 
-    messageList.innerHTML = uniqueIds.map(id => {
-        // 从can_definitions获取描述
+    allIds.forEach(id => {
+        let displayId = id;
         let description = '';
-        const idLower = id.toLowerCase();
 
-        // 尝试从canDefinitions中获取更详细的信息
+        // 检查nameDefinitions是否有virtualId
+        if (nameDefinitions.definitions && nameDefinitions.definitions[id]) {
+            const def = nameDefinitions.definitions[id];
+            if (def.virtualId !== undefined) {
+                displayId = def.virtualId;
+                description = def.description;
+            }
+        }
+
+        // 检查canDefinitions
+        const idLower = id.toLowerCase();
         if (canDefinitions[idLower]) {
             const def = canDefinitions[idLower];
             if (typeof def === 'object' && def.description) {
@@ -525,7 +602,6 @@ function toggleMessageFilter(messageId) {
                 description = def;
             }
         } else {
-            // 如果直接匹配失败，尝试通过dec字段匹配
             for (const key in canDefinitions) {
                 const def = canDefinitions[key];
                 if (typeof def === 'object' && def.dec === id) {
@@ -535,12 +611,30 @@ function toggleMessageFilter(messageId) {
             }
         }
 
-        // 格式化显示：0xID - Description
-        const displayId = '0x' + id.toUpperCase();
-        const displayText = description ? `${displayId} - ${description}` : displayId;
+        if (!displayIdMap.has(displayId)) {
+            displayIdMap.set(displayId, { ids: new Set(), description: description });
+        }
+        displayIdMap.get(displayId).ids.add(id);
+    });
+
+    // 按显示ID排序
+    const sortedDisplayIds = Array.from(displayIdMap.keys())
+        .sort((a, b) => a.toString().localeCompare(b.toString(), undefined, { sensitivity: 'base' }));
+
+    messageList.innerHTML = sortedDisplayIds.map(displayId => {
+        const info = displayIdMap.get(displayId);
+        const description = info.description;
+        const originalIds = Array.from(info.ids);
+
+        // 格式化显示
+        const formattedId = '0x' + displayId.toString().toUpperCase();
+        const displayText = description ? `${formattedId} - ${description}` : formattedId;
+
+        // 检查是否所有关联的原始ID都被隐藏
+        const isFiltered = originalIds.every(id => hiddenMessageIds.has(id));
 
         return `
-        <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
+        <div class="list-group-item list-group-item-action message-filter-item ${isFiltered ? 'filtered' : ''}" data-message-id="${escapeHtml(originalIds.join(','))}" data-display-id="${escapeHtml(displayId)}">
             <span class="message-status-icon"></span><span title="${escapeHtml(displayText)}">${escapeHtml(displayText)}</span>
         </div>
     `;

@@ -1,0 +1,37 @@
+{
+    "definitions": {
+        "RTB0_EXP_ENABLE_HI": {
+            "description": "Exp Ena/Cmd Real Time Lines",
+            "virtualId": "0",
+            "category": "RTB Signal"
+        },
+        "RTB1_EXP_CMD_HI": {
+            "description": "Exp Ena/Cmd Real Time Lines",
+            "virtualId": "0",
+            "category": "RTB Signal"
+        },
+        "RTB2_XRAY_ON_HI": {
+            "description": "XrayOn Real Time Lines",
+            "virtualId": "1",
+            "category": "RTB Signal"
+        },
+        "RTB2_XRAY_ON_LO": {
+            "description": "XrayOn Real Time Lines",
+            "virtualId": "1",
+            "category": "RTB Signal"
+        }
+    },
+    "_description": "根据Name字段定义Id列显示描述的配置文件",
+    "_usage": {
+        "definitions": "匹配规则字典。键为CSV中Name字段的值",
+        "description": "在Id列显示的描述文本",
+        "virtualId": "用于侧边栏分组显示的虚拟ID，相同virtualId的消息会合并显示",
+        "category": "可选，消息分类"
+    },
+    "_example": {
+        "CSV数据": "Type=receive, Source=N/A, Target=XRTechMgr, Name=RTB0_EXP_ENABLE_HI",
+        "Name字段值": "RTB0_EXP_ENABLE_HI",
+        "Id列显示": "Exp Ena/Cmd Real Time Lines",
+        "侧边栏显示": "0x0 - Exp Ena/Cmd Real Time Lines"
+    }
+}

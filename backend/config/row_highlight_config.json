@@ -20,6 +20,27 @@
             "backgroundColor": "#e3f2fd",
             "textColor": "#1565c0",
             "description": "设置采集命令消息"
+        },
+        {
+            "match": "Exp Ena/Cmd Real Time Lines",
+            "matchType": "contains",
+            "backgroundColor": "#fff3e0",
+            "textColor": "#e65100",
+            "description": "RTB曝光使能信号"
+        },
+        {
+            "match": "XrayOn Real Time Lines",
+            "matchType": "contains",
+            "backgroundColor": "#fff3e0",
+            "textColor": "#e65100",
+            "description": "RTB曝光使能低信号"
+        },
+        {
+            "match": "set Limited Parameters",
+            "matchType": "contains",
+            "backgroundColor": "#e8f5e9",
+            "textColor": "#2e7d32",
+            "description": "设置限制参数消息"
         }
     ],
     "_description": "行高亮配置文件",
