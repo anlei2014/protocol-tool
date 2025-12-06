@@ -64,19 +64,424 @@
     "dec": "489",
     "description": "Update SC Parameters"
   },
-  "2cf": {
-    "hex": "2cf",
-    "dec": "719",
-    "description": "Reply Thermal State"
+  "1ea": {
+    "hex": "1ea",
+    "dec": "490",
+    "description": "Select Techniques"
+  },
+  "1eb": {
+    "hex": "1eb",
+    "dec": "491",
+    "description": "Confirm Techniques Selection"
+  },
+  "1ec": {
+    "hex": "1ec",
+    "dec": "492",
+    "description": "Confirm Techniques Selection"
   },
   "1f0": {
     "hex": "1f0",
     "dec": "496",
     "description": "Configure AEC"
   },
-  "4be": {
-    "hex": "4be",
-    "dec": "1214",
-    "description": "Example Message 4be"
+  "1f1": {
+    "hex": "1f1",
+    "dec": "497",
+    "description": "Confirm AEC Configuration"
+  },
+  "1f4": {
+    "hex": "1f4",
+    "dec": "500",
+    "description": "Select Tube"
+  },
+  "1f5": {
+    "hex": "1f5",
+    "dec": "501",
+    "description": "Confirm Select Tube"
+  },
+  "1f6": {
+    "hex": "1f6",
+    "dec": "502",
+    "description": "Selected Tube"
+  },
+  "208": {
+    "hex": "208",
+    "dec": "520",
+    "description": "Generator Status / Error"
+  },
+  "20a": {
+    "hex": "20a",
+    "dec": "522",
+    "description": "System Power Notification"
+  },
+  "20b": {
+    "hex": "20b",
+    "dec": "523",
+    "description": "Generator Power Notification"
+  },
+  "20d": {
+    "hex": "20d",
+    "dec": "525",
+    "description": "Generator Identification"
+  },
+  "20f": {
+    "hex": "20f",
+    "dec": "527",
+    "description": "System Identification"
+  },
+  "217": {
+    "hex": "217",
+    "dec": "535",
+    "description": "Avail Run time/Exposures"
+  },
+  "2bc": {
+    "hex": "2bc",
+    "dec": "700",
+    "description": "Actual Exp Parameters"
+  },
+  "2c1": {
+    "hex": "2c1",
+    "dec": "705",
+    "description": "Detailed Actual Exp Parameters"
+  },
+  "2c2": {
+    "hex": "2c2",
+    "dec": "706",
+    "description": "Detailed Actual Pulse Parameters"
+  },
+  "2c3": {
+    "hex": "2c3",
+    "dec": "707",
+    "description": "Extra Actual Exposure Parameters"
+  },
+  "2c4": {
+    "hex": "2c4",
+    "dec": "708",
+    "description": "Start Exposure Feedback"
+  },
+  "2c5": {
+    "hex": "2c5",
+    "dec": "709",
+    "description": "Detail Exposure Spits"
+  },
+  "2c6": {
+    "hex": "2c6",
+    "dec": "710",
+    "description": "Fast kV switching feeback"
+  },
+  "2c7": {
+    "hex": "2c7",
+    "dec": "711",
+    "description": "Tube Watch Dataset # 1"
+  },
+  "2c8": {
+    "hex": "2c8",
+    "dec": "712",
+    "description": "Tube Watch Dataset # 2(spits)"
+  },
+  "2ca": {
+    "hex": "2ca",
+    "dec": "714",
+    "description": "Get Ich"
+  },
+  "2cb": {
+    "hex": "2cb",
+    "dec": "715",
+    "description": "Reply Ich"
+  },
+  "2cc": {
+    "hex": "2cc",
+    "dec": "716",
+    "description": "Set Exposure Profile"
+  },
+  "2cd": {
+    "hex": "2cd",
+    "dec": "717",
+    "description": "Reply Exposure Profile"
+  },
+  "2ce": {
+    "hex": "2ce",
+    "dec": "718",
+    "description": "Get Thermal State"
+  },
+  "2cf": {
+    "hex": "2cf",
+    "dec": "719",
+    "description": "Reply Thermal State"
+  },
+  "2d0": {
+    "hex": "2d0",
+    "dec": "720",
+    "description": "Get Tube Warmup Status"
+  },
+  "2d1": {
+    "hex": "2d1",
+    "dec": "721",
+    "description": "Reply/Send Tube Warmup Status"
+  },
+  "2ee": {
+    "hex": "2ee",
+    "dec": "750",
+    "description": "Get Generator Capabilities"
+  },
+  "2ef": {
+    "hex": "2ef",
+    "dec": "751",
+    "description": "Reply Generator Capabilities"
+  },
+  "2f0": {
+    "hex": "2f0",
+    "dec": "752",
+    "description": "Get Receptor Configuration"
+  },
+  "2f1": {
+    "hex": "2f1",
+    "dec": "753",
+    "description": "Reply Receptor Configuration"
+  },
+  "2f8": {
+    "hex": "2f8",
+    "dec": "760",
+    "description": "Get System Config"
+  },
+  "2f9": {
+    "hex": "2f9",
+    "dec": "761",
+    "description": "Reply System Config"
+  },
+  "2fa": {
+    "hex": "2fa",
+    "dec": "762",
+    "description": "Get Generator time"
+  },
+  "2fb": {
+    "hex": "2fb",
+    "dec": "763",
+    "description": "Reply Generator time"
+  },
+  "2ff": {
+    "hex": "2ff",
+    "dec": "767",
+    "description": "Get information message"
+  },
+  "400": {
+    "hex": "400",
+    "dec": "1024",
+    "description": "RAD_IF slio message(state)"
+  },
+  "401": {
+    "hex": "401",
+    "dec": "1025",
+    "description": "RAD_IF slio message transmit"
+  },
+  "410": {
+    "hex": "410",
+    "dec": "1040",
+    "description": "AEC slio message(state) receive"
+  },
+  "411": {
+    "hex": "411",
+    "dec": "1041",
+    "description": "AEC slio message(state) transmit"
+  },
+  "420": {
+    "hex": "420",
+    "dec": "1056",
+    "description": "RAD_IF initiate code download request"
+  },
+  "421": {
+    "hex": "421",
+    "dec": "1057",
+    "description": "RAD_IF initiate code download confirm"
+  },
+  "422": {
+    "hex": "422",
+    "dec": "1058",
+    "description": "RAD_IF initiate code download confirm"
+  },
+  "423": {
+    "hex": "423",
+    "dec": "1059",
+    "description": "RAD_IF initiate code download confirm"
+  },
+  "430": {
+    "hex": "430",
+    "dec": "1072",
+    "description": "AEC initiate code download request"
+  },
+  "431": {
+    "hex": "431",
+    "dec": "1073",
+    "description": "AEC initiate code download confirm"
+  },
+  "432": {
+    "hex": "432",
+    "dec": "1074",
+    "description": "AEC Get/Set data request"
+  },
+  "433": {
+    "hex": "433",
+    "dec": "1075",
+    "description": "reply AEC Get/Set data"
+  },
+  "450": {
+    "hex": "450",
+    "dec": "1104",
+    "description": "Power Quality Event Dataset#1"
+  },
+  "451": {
+    "hex": "451",
+    "dec": "1105",
+    "description": "Power Quality Event Dataset#2"
+  },
+  "452": {
+    "hex": "452",
+    "dec": "1106",
+    "description": "Anode Landing Status"
+  },
+  "453": {
+    "hex": "453",
+    "dec": "1107",
+    "description": "Anode Rotation Status"
+  },
+  "460": {
+    "hex": "460",
+    "dec": "1120",
+    "description": "Get staticId"
+  },
+  "461": {
+    "hex": "461",
+    "dec": "1121",
+    "description": "Reply staticId"
+  },
+  "46a": {
+    "hex": "46a",
+    "dec": "1130",
+    "description": "Get/Set data"
+  },
+  "46b": {
+    "hex": "46b",
+    "dec": "1131",
+    "description": "Reply Get/Set data"
+  },
+  "46d": {
+    "hex": "46d",
+    "dec": "1133",
+    "description": "Filament Calibration Feedback"
+  },
+  "46e": {
+    "hex": "46e",
+    "dec": "1134",
+    "description": "Set Generator mode"
+  },
+  "46f": {
+    "hex": "46f",
+    "dec": "1135",
+    "description": "Confirm Generator mode"
+  },
+  "470": {
+    "hex": "470",
+    "dec": "1136",
+    "description": "Request Debug"
+  },
+  "471": {
+    "hex": "471",
+    "dec": "1137",
+    "description": "Reply Debug"
+  },
+  "472": {
+    "hex": "472",
+    "dec": "1138",
+    "description": "get Database Data"
+  },
+  "473": {
+    "hex": "473",
+    "dec": "1139",
+    "description": "Reply Database Data"
+  },
+  "474": {
+    "hex": "474",
+    "dec": "1140",
+    "description": "intergration tools"
+  },
+  "475": {
+    "hex": "475",
+    "dec": "1141",
+    "description": "Intergration tools"
+  },
+  "478": {
+    "hex": "478",
+    "dec": "1144",
+    "description": "SystemWatchDog"
+  },
+  "479": {
+    "hex": "479",
+    "dec": "1145",
+    "description": "JediWatchdog"
+  },
+  "47d": {
+    "hex": "47d",
+    "dec": "1149",
+    "description": "SysAecCalParam"
+  },
+  "47e": {
+    "hex": "47e",
+    "dec": "1150",
+    "description": "JediAecCalParam"
+  },
+  "47f": {
+    "hex": "47f",
+    "dec": "1151",
+    "description": "Serial Link Connection"
+  },
+  "480": {
+    "hex": "480",
+    "dec": "1152",
+    "description": "Elan Engineering/Debug"
+  },
+  "481": {
+    "hex": "481",
+    "dec": "1153",
+    "description": "Elan Engineering/Debug Response"
+  },
+  "500": {
+    "hex": "500",
+    "dec": "1280",
+    "description": "Generator memory upload / download request"
+  },
+  "501": {
+    "hex": "501",
+    "dec": "1281",
+    "description": "Generator memory upload / download confirm"
+  },
+  "50a": {
+    "hex": "50a",
+    "dec": "1290",
+    "description": "Configuration Request"
+  },
+  "50b": {
+    "hex": "50b",
+    "dec": "1291",
+    "description": "Configuration Reply"
+  },
+  "50c": {
+    "hex": "50c",
+    "dec": "1292",
+    "description": "Read write request"
+  },
+  "50d": {
+    "hex": "50d",
+    "dec": "1293",
+    "description": "Read write reply"
+  },
+  "510": {
+    "hex": "510",
+    "dec": "1296",
+    "description": "Generic scope request"
+  },
+  "511": {
+    "hex": "511",
+    "dec": "1297",
+    "description": "Generic scope reply"
   }
 }
