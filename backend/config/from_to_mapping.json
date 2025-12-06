@@ -1,0 +1,64 @@
+{
+    "rules": {
+        "FROM_JEDI_MSG": {
+            "from": "Jedi",
+            "to": "System",
+            "description": "来自Jedi的消息"
+        },
+        "TO_JEDI_MSG": {
+            "from": "System",
+            "to": "Jedi",
+            "description": "发送到Jedi的消息"
+        },
+        "FROM_SYSTEM_MSG": {
+            "from": "System",
+            "to": "External",
+            "description": "来自系统的消息"
+        },
+        "TO_SYSTEM_MSG": {
+            "from": "External",
+            "to": "System",
+            "description": "发送到系统的消息"
+        }
+    },
+    "separator": " => ",
+    "defaultFrom": "Unknown",
+    "defaultTo": "Unknown",
+    "_description": "根据CSV中的Name字段解析From->To列显示内容的配置文件",
+    "_usage": {
+        "rules": "匹配规则字典。键为CSV中Name字段的值，值包含from(来源)和to(目标)",
+        "from": "消息的来源方，将显示在分隔符左边",
+        "to": "消息的目标方，将显示在分隔符右边",
+        "separator": "from和to之间的分隔符，默认为 ' => '",
+        "defaultFrom": "当Name字段无法匹配任何规则时，使用原始Source值或此默认值",
+        "defaultTo": "当Name字段无法匹配任何规则时，使用原始Target值或此默认值"
+    },
+    "_examples": [
+        {
+            "说明": "FROM_xxx表示消息来自xxx",
+            "CSV原始数据": "Type=publish, Source=XRTechMgr, Target=N/A, Name=FROM_JEDI_MSG",
+            "Name字段值": "FROM_JEDI_MSG",
+            "匹配规则": "{ from: 'Jedi', to: 'System' }",
+            "显示结果": "Jedi => System"
+        },
+        {
+            "说明": "TO_xxx表示消息发送到xxx",
+            "CSV原始数据": "Type=publish, Source=XRTechMgr, Target=N/A, Name=TO_JEDI_MSG",
+            "Name字段值": "TO_JEDI_MSG",
+            "匹配规则": "{ from: 'System', to: 'Jedi' }",
+            "显示结果": "System => Jedi"
+        }
+    ],
+    "_howToAddNewRule": {
+        "步骤1": "找到CSV文件中Name字段的值，例如 'FROM_AEC_MSG'",
+        "步骤2": "确定消息的来源方(from)和目标方(to)",
+        "步骤3": "在rules中添加新规则，格式如下:",
+        "示例": {
+            "FROM_AEC_MSG": {
+                "from": "AEC",
+                "to": "System",
+                "description": "来自AEC的消息"
+            }
+        }
+    }
+}

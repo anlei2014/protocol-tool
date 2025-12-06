@@ -3,6 +3,7 @@ let unifiedRows = []; // 保存统一视图数据
 let hiddenMessageIds = new Set(); // 隐藏的消息ID集合
 let canDefinitions = {}; // CAN消息定义
 let rowHighlightConfig = { highlights: [] }; // 行高亮配置
+let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
 
 // 加载CAN定义
 async function loadCanDefinitions() {
@@ -34,6 +35,41 @@ async function loadRowHighlightConfig() {
         console.warn('加载行高亮配置失败:', error);
         rowHighlightConfig = { highlights: [] };
     }
+}
+
+// 加载From->To映射配置
+async function loadFromToMapping() {
+    try {
+        const response = await fetch('/config/from_to_mapping.json');
+        if (response.ok) {
+            fromToMapping = await response.json();
+        } else {
+            console.warn('无法加载From->To映射配置文件');
+            fromToMapping = { mappings: {}, separator: ' => ' };
+        }
+    } catch (error) {
+        console.warn('加载From->To映射配置失败:', error);
+        fromToMapping = { rules: {}, separator: ' => ' };
+    }
+}
+
+// 根据Name字段转换From->To显示
+function transformFromTo(name, source, target) {
+    const rules = fromToMapping.rules || {};
+    const separator = fromToMapping.separator || ' => ';
+    const defaultFrom = fromToMapping.defaultFrom || source || 'Unknown';
+    const defaultTo = fromToMapping.defaultTo || target || 'Unknown';
+
+    // 根据Name字段查找匹配的规则
+    if (name && rules[name]) {
+        const rule = rules[name];
+        const from = rule.from || defaultFrom;
+        const to = rule.to || defaultTo;
+        return `${from}${separator}${to}`;
+    }
+
+    // 如果没有匹配的规则，使用原始的Source和Target
+    return `${source || defaultFrom}${separator}${target || defaultTo}`;
 }
 
 // 根据配置获取行的高亮样式
@@ -77,10 +113,80 @@ function getRowHighlightStyle(rowData) {
     return null;
 }
 
+// 表格样式配置
+let tableStyleConfig = {
+    table: {
+        fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace",
+        fontSize: "13px",
+        rowOddBackground: "#ffffff",
+        rowEvenBackground: "#f0f4f8",
+        rowHoverBackground: "#e8f4fc",
+        rowBorderColor: "#dee2e6"
+    }
+};
+
+// 加载表格样式配置
+async function loadTableStyleConfig() {
+    try {
+        const response = await fetch('/static/config/table_style_config.json');
+        if (response.ok) {
+            tableStyleConfig = await response.json();
+            applyTableStyles();
+        } else {
+            console.warn('无法加载表格样式配置文件，使用默认样式');
+        }
+    } catch (error) {
+        console.warn('加载表格样式配置失败:', error);
+    }
+}
+
+// 应用表格样式
+function applyTableStyles() {
+    const style = tableStyleConfig.table;
+    if (!style) return;
+
+    // 创建或更新动态样式
+    let styleEl = document.getElementById('dynamicTableStyle');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamicTableStyle';
+        document.head.appendChild(styleEl);
+    }
+
+    styleEl.textContent = `
+        /* 动态表格样式 - 来自配置文件 */
+        #dataTable tbody td {
+            font-family: ${style.fontFamily};
+            font-size: ${style.fontSize};
+        }
+        
+        #dataTable tbody td:first-child {
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        #dataTable tbody tr:nth-child(odd) {
+            background-color: ${style.rowOddBackground};
+        }
+
+        #dataTable tbody tr:nth-child(even) {
+            background-color: ${style.rowEvenBackground};
+        }
+
+        #dataTable tbody tr {
+            border-bottom: 1px solid ${style.rowBorderColor};
+        }
+
+        #dataTable tbody tr:hover {
+            background-color: ${style.rowHoverBackground} !important;
+        }
+    `;
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
-    // 先加载CAN定义和行高亮配置
-    await Promise.all([loadCanDefinitions(), loadRowHighlightConfig()]);
+    // 先加载所有配置
+    await Promise.all([loadCanDefinitions(), loadRowHighlightConfig(), loadFromToMapping(), loadTableStyleConfig()]);
     // 从URL参数获取文件名和协议
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
@@ -261,7 +367,7 @@ function showPreview(data, filename, protocol = 'CAN') {
             }
         }
 
-        const fromTo = `${source}->${target}`;
+        const fromTo = transformFromTo(name, source, target);
         const id = parsedId || name || 'N/A';
         const dataField = parsedData || buffer || '';
 

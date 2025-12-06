@@ -175,8 +175,21 @@ function resetZoom() {
 function applyZoom() {
     const dataTable = document.getElementById('dataTable');
     if (dataTable) {
-        dataTable.style.fontSize = `${currentZoom}%`;
-        showMessage(`缩放: ${currentZoom}%`, 'info');
+        // 获取配置文件中的基础字体大小
+        const baseSize = (typeof tableStyleConfig !== 'undefined' && tableStyleConfig.table && tableStyleConfig.table.fontSize)
+            ? parseFloat(tableStyleConfig.table.fontSize)
+            : 13;
+
+        // 根据缩放比例计算新字体大小
+        const newSize = Math.round(baseSize * currentZoom / 100);
+
+        // 应用到表格tbody中的所有td
+        const cells = dataTable.querySelectorAll('tbody td');
+        cells.forEach(cell => {
+            cell.style.fontSize = `${newSize}px`;
+        });
+
+        showMessage(`缩放: ${currentZoom}% (字体: ${newSize}px)`, 'info');
     }
 }
 
