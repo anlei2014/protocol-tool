@@ -1,5 +1,4 @@
 # Go
-*.exe
 *.exe~
 *.dll
 *.so
@@ -24,12 +23,6 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-# Uploads
-uploads/
-*.csv
-
 # Logs
 *.log
 
-# Dependencies
-vendor/
