@@ -231,13 +231,13 @@ function renderFilesList() {
     `).join('');
 }
 
-// 解析文件 - 跳转到预览页面
-function parseFile(filename, protocol = null) {
-    // 如果没有指定协议，使用当前选择的协议
-    const parseProtocol = protocol || selectedProtocol;
+// 解析文件 - 跳转到协议专用预览页面
+function parseFile(filename, protocol = 'CAN') {
+    // 根据协议确定预览页面路径
+    const protocolPath = protocol.toLowerCase();
 
-    // 跳转到预览页面，传递文件名和协议参数
-    window.location.href = `/preview.html?file=${encodeURIComponent(filename)}&protocol=${encodeURIComponent(parseProtocol)}`;
+    // 跳转到协议专用预览页面
+    window.location.href = `/${protocolPath}/preview.html?file=${encodeURIComponent(filename)}&protocol=${encodeURIComponent(protocol)}`;
 }
 
 

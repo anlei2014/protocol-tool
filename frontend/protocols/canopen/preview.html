@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CANOPEN预览 - CSV解析工具</title>
+    <!-- Bootstrap CSS - 使用本地文件 -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons - 使用本地文件 -->
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css?v=3">
+</head>
+
+<body>
+    <div class="d-flex flex-column vh-100">
+        <!-- Header -->
+        <header class="text-center text-white py-3 flex-shrink-0">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <a href="/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>返回
+                </a>
+                <div>
+                    <h5 class="fw-bold mb-0">CANOPEN 数据预览 <small class="text-white-50" id="pageSubtitle"></small></h5>
+                </div>
+                <div style="width: 80px;"></div>
+            </div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <div class="container-fluid flex-grow-1 d-flex align-items-center justify-content-center">
+            <div class="text-center">
+                <i class="bi bi-hdd-network display-1 text-info mb-4"></i>
+                <h2 class="mb-3">CANOPEN 协议预览</h2>
+                <p class="text-muted mb-4">此协议的解析功能正在开发中...</p>
+                <p class="text-muted">请根据您的CANOPEN协议需求配置以下文件：</p>
+                <ul class="list-group list-group-flush text-start mb-4" style="max-width: 500px; margin: 0 auto;">
+                    <li class="list-group-item"><code>backend/config/canopen/definitions.json</code> - 消息定义</li>
+                    <li class="list-group-item"><code>backend/config/canopen/name_definitions.json</code> - Name映射</li>
+                    <li class="list-group-item"><code>backend/config/canopen/from_to_mapping.json</code> - From-To规则
+                    </li>
+                    <li class="list-group-item"><code>backend/config/canopen/row_highlight.json</code> - 行高亮规则</li>
+                    <li class="list-group-item"><code>frontend/protocols/canopen/js/preview.js</code> - 前端逻辑</li>
+                </ul>
+                <a href="/" class="btn btn-primary btn-lg">
+                    <i class="bi bi-house me-2"></i>返回首页
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

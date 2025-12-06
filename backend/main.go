@@ -33,7 +33,15 @@ func main() {
 	// 静态文件服务
 	r.Static("/static", "../frontend")
 	r.Static("/uploads", "../uploads")
-	r.Static("/config", "./config")
+
+	// 协议专用配置路由 (后端配置)
+	r.Static("/config/can", "./config/can")
+	r.Static("/config/canopen", "./config/canopen")
+	r.Static("/config/common", "./config/common")
+
+	// 协议专用前端静态资源路由
+	r.Static("/protocols/can", "../frontend/protocols/can")
+	r.Static("/protocols/canopen", "../frontend/protocols/canopen")
 
 	// API路由
 	api := r.Group("/api")
@@ -54,9 +62,18 @@ func main() {
 		c.File("../frontend/index.html")
 	})
 
-	// 预览页面路由
+	// 协议专用预览页面路由
+	r.GET("/can/preview.html", func(c *gin.Context) {
+		c.File("../frontend/protocols/can/preview.html")
+	})
+
+	r.GET("/canopen/preview.html", func(c *gin.Context) {
+		c.File("../frontend/protocols/canopen/preview.html")
+	})
+
+	// 保持旧路由兼容性（重定向到CAN）
 	r.GET("/preview.html", func(c *gin.Context) {
-		c.File("../frontend/preview.html")
+		c.Redirect(301, "/can/preview.html"+c.Request.URL.RawQuery)
 	})
 
 	// 启动服务器

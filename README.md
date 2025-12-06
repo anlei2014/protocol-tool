@@ -4,26 +4,70 @@
 
 ## 技术栈
 
-- 后端：Go语言 + Gin框架
-- 前端：HTML + CSS + JavaScript
-- 架构：前后端分离
+- **后端**：Go语言 + Gin框架
+- **前端**：HTML + CSS + JavaScript + Bootstrap 5
+- **架构**：前后端分离，JSON配置驱动
 
 ## 项目结构
 
 ```
 protocol-tool/
-├── backend/                 # Go后端服务
-│   ├── main.go             # 主程序入口
-│   ├── handlers/           # 请求处理器
-│   ├── models/             # 数据模型
-│   ├── services/           # 业务逻辑
-│   └── go.mod              # Go模块文件
-├── frontend/               # 前端静态文件
-│   ├── index.html          # 主页面
-│   ├── style.css           # 样式文件
-│   └── script.js           # JavaScript文件
-├── uploads/                # 上传文件存储目录
-└── README.md               # 项目说明
+├── 📁 backend/                            # Go后端服务
+│   ├── 📄 main.go                         # 主程序入口、路由配置
+│   ├── 📄 go.mod / go.sum                 # Go模块依赖
+│   ├── 📁 handlers/                       # HTTP请求处理器
+│   │   └── 📄 csv_handler.go              # CSV文件上传/解析/删除API
+│   ├── 📁 models/                         # 数据模型定义
+│   │   └── 📄 csv.go                      # CSV数据结构与响应模型
+│   ├── 📁 services/                       # 业务逻辑层
+│   │   └── 📄 csv_service.go              # 文件处理、协议解析服务
+│   └── 📁 config/                         # 协议配置目录（可扩展）
+│       ├── 📁 can/                        # CAN协议配置
+│       │   ├── 📄 definitions.json        # CAN ID定义与消息含义
+│       │   ├── 📄 from_to_mapping.json    # From->To列映射规则
+│       │   ├── 📄 name_definitions.json   # Name字段到Id描述映射
+│       │   └── 📄 row_highlight.json      # 行高亮颜色配置
+│       ├── 📁 canopen/                    # CANOPEN协议配置（结构同CAN）
+│       │   ├── 📄 definitions.json
+│       │   ├── 📄 from_to_mapping.json
+│       │   ├── 📄 name_definitions.json
+│       │   └── 📄 row_highlight.json
+│       └── 📁 common/                     # 公共配置（预留）
+│
+├── 📁 frontend/                           # 前端静态文件
+│   ├── 📄 index.html                      # 主页面（文件上传/管理）
+│   ├── 📁 css/                            # 样式文件
+│   │   ├── 📄 style.css                   # 自定义主题样式
+│   │   ├── 📄 bootstrap.min.css           # Bootstrap框架
+│   │   ├── 📄 bootstrap-icons.min.css     # Bootstrap图标
+│   │   └── 📄 dropdown-fix.css            # 下拉菜单修复样式
+│   ├── 📁 js/                             # JavaScript脚本
+│   │   ├── 📄 script.js                   # 主页面交互逻辑
+│   │   ├── 📄 preview.js                  # 数据预览核心逻辑
+│   │   ├── 📄 menu-functions.js           # 菜单与导航功能
+│   │   └── 📄 bootstrap.bundle.min.js     # Bootstrap JS
+│   ├── 📁 config/                         # 前端配置
+│   │   └── 📄 table_style_config.json     # 表格样式配置
+│   ├── 📁 fonts/                          # 字体资源
+│   ├── 📁 common/                         # 公共组件（预留）
+│   └── 📁 protocols/                      # 协议特定页面（可扩展）
+│       ├── 📁 can/                        # CAN协议模块
+│       │   ├── 📄 preview.html            # CAN数据预览页面
+│       │   ├── 📁 js/                     # CAN专用脚本
+│       │   ├── 📁 css/                    # CAN专用样式
+│       │   └── 📁 config/                 # CAN前端配置
+│       └── 📁 canopen/                    # CANOPEN协议模块
+│           ├── 📄 preview.html            # CANOPEN数据预览页面
+│           ├── 📁 js/                     # CANOPEN专用脚本
+│           ├── 📁 css/                    # CANOPEN专用样式
+│           └── 📁 config/                 # CANOPEN前端配置
+│
+├── 📁 uploads/                            # 上传文件存储目录
+├── 📄 server.exe                          # 编译后的服务器可执行文件
+├── 📄 start.bat                           # Windows启动脚本
+├── 📄 start.sh                            # Linux/Mac启动脚本
+├── 📄 test_can_messages.csv               # 测试数据文件
+└── 📄 README.md                           # 项目说明文档
 ```
 
 ## 功能特性
@@ -32,18 +76,21 @@ protocol-tool/
 - **多协议解析**：支持CAN协议（FIXED格式）和CANOPEN协议（Mobiled格式）
 - **文件上传**：支持拖拽和点击上传CSV文件
 - **智能解析**：根据选择的协议自动处理数据格式
-- **数据预览**：表格形式展示解析结果，支持大数据量（显示前100行）
+- **数据预览**：表格形式展示解析结果，支持大数据量
 - **文件管理**：查看、删除已上传的文件
 
-### 🎯 协议支持
-- **CAN协议（FIXED）**：添加协议类型、消息ID、数据长度等字段
-- **CANOPEN协议（Mobiled）**：添加协议类型、节点ID、对象索引、子索引等字段
+### 🎨 数据展示增强
+- **CAN ID含义显示**：自动识别CAN消息ID并显示对应含义
+- **From->To映射**：根据Name字段自动填充消息方向
+- **Id描述映射**：Name字段自动映射为可读的Id描述
+- **行高亮**：根据消息类型自动高亮显示（如RTB信号等）
+- **表格样式配置**：可自定义表格外观（列宽、颜色等）
 
 ### 💡 用户体验
 - **响应式界面**：适配不同屏幕尺寸
 - **实时反馈**：上传进度、解析状态、错误提示
-- **文件验证**：自动验证CSV格式
-- **原始文件名显示**：保持用户友好的文件名显示
+- **菜单导航**：File、Decode、Time、Messages、View等功能菜单
+- **侧边栏**：可折叠的CAN消息列表
 
 ## 快速开始
 
@@ -57,15 +104,13 @@ start.bat
 
 **Linux/Mac用户：**
 ```bash
-# 在终端执行
 ./start.sh
 ```
 
 ### 方法二：手动启动
 
-1. 安装Go语言环境（如果未安装）
+1. 安装Go语言环境（Go 1.21+）
    - 下载地址：https://golang.org/dl/
-   - 安装后确保Go在PATH环境变量中
 
 2. 启动后端服务：
    ```bash
@@ -76,142 +121,80 @@ start.bat
 
 3. 打开浏览器访问：http://localhost:8080
 
-## 使用指南
-
-### 📁 文件上传
-1. **选择协议**：在上传区域选择CAN或CANOPEN协议
-2. **上传文件**：拖拽CSV文件到上传区域或点击"选择文件"按钮
-3. **自动验证**：系统自动验证文件格式，只接受.csv文件
-4. **文件存储**：文件以UUID_原始文件名.csv格式存储，避免冲突
-
-### 🔧 协议解析
-- **CAN协议解析**：
-  - 添加"协议类型"列（显示"CAN"）
-  - 添加"消息ID"列（基于数据长度的十六进制ID）
-  - 添加"数据长度"列（每行字段数量）
-  
-- **CANOPEN协议解析**：
-  - 添加"协议类型"列（显示"CANOPEN"）
-  - 添加"节点ID"列（Node_1, Node_2, ...）
-  - 添加"对象索引"列（0x0000, 0x0064, ...）
-  - 添加"子索引"列（0x00）
-
-### 📊 数据预览
-- **表格展示**：以表格形式显示解析后的数据
-- **协议信息**：显示当前使用的解析协议
-- **数据统计**：显示总行数、列数等统计信息
-- **性能优化**：大数据量时只显示前100行，提高性能
-
-### 🗂️ 文件管理
-- **文件列表**：显示所有已上传的文件
-- **原始文件名**：保持用户友好的文件名显示
-- **文件信息**：显示文件大小、行数、列数、上传时间
-- **操作按钮**：每个文件都有CAN解析、CANOPEN解析、删除按钮
-
 ## API接口
 
-### 📡 RESTful API
-- `POST /api/upload` - 上传CSV文件
-- `GET /api/files` - 获取已上传文件列表
-- `GET /api/parse/:filename?protocol=CAN` - 使用CAN协议解析指定CSV文件
-- `GET /api/parse/:filename?protocol=CANOPEN` - 使用CANOPEN协议解析指定CSV文件
-- `DELETE /api/file/:filename` - 删除指定文件
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/upload` | 上传CSV文件 |
+| GET | `/api/files` | 获取已上传文件列表 |
+| GET | `/api/parse/:filename?protocol=CAN` | CAN协议解析 |
+| GET | `/api/parse/:filename?protocol=CANOPEN` | CANOPEN协议解析 |
+| DELETE | `/api/file/:filename` | 删除指定文件 |
 
-### 🔧 协议参数
-- `protocol=CAN` - 使用CAN协议（FIXED格式）解析
-- `protocol=CANOPEN` - 使用CANOPEN协议（Mobiled格式）解析
-- 默认协议：CAN
+## 配置系统
 
-## 技术架构
+项目采用JSON配置驱动，无需修改代码即可自定义行为：
 
-### 🏗️ 系统架构
-- **前端**：HTML5 + CSS3 + JavaScript（原生）
-- **后端**：Go 1.21+ + Gin Web框架
-- **数据存储**：本地文件系统
-- **通信**：RESTful API + JSON
+### 后端配置 (`backend/config/`)
 
-### 📁 项目结构
-```
-protocol-tool/
-├── backend/                    # Go后端服务
-│   ├── main.go                # 主程序入口
-│   ├── handlers/              # HTTP请求处理器
-│   │   └── csv_handler.go     # CSV相关API处理
-│   ├── models/                # 数据模型定义
-│   │   └── csv.go             # CSV数据模型
-│   ├── services/              # 业务逻辑层
-│   │   └── csv_service.go     # CSV处理服务
-│   ├── go.mod                 # Go模块依赖
-│   └── csv-parser.exe         # 编译后的可执行文件
-├── frontend/                  # 前端静态文件
-│   ├── index.html             # 主页面
-│   ├── style.css              # 样式文件
-│   └── script.js              # JavaScript逻辑
-├── uploads/                   # 上传文件存储目录（运行时创建）
-├── sample_data.csv            # 示例测试数据
-├── start.bat                  # Windows启动脚本
-├── start.sh                   # Linux/Mac启动脚本
-├── .gitignore                 # Git忽略文件
-└── README.md                  # 项目说明文档
-```
+| 配置文件 | 说明 |
+|----------|------|
+| `definitions.json` | CAN消息ID与含义定义 |
+| `from_to_mapping.json` | Name字段到From->To方向的映射规则 |
+| `name_definitions.json` | Name字段到Id描述的映射 |
+| `row_highlight.json` | 行高亮规则（颜色、匹配条件） |
 
-## 测试数据
+### 前端配置 (`frontend/config/`)
 
-项目包含一个示例CSV文件 `sample_data.csv`，包含以下测试数据：
-- 姓名、年龄、城市、职业、薪资等字段
-- 可用于测试CAN和CANOPEN协议解析功能
+| 配置文件 | 说明 |
+|----------|------|
+| `table_style_config.json` | 表格列宽、样式等外观配置 |
+
+## 扩展新协议
+
+项目采用模块化设计，添加新协议只需：
+
+1. **后端**：在 `backend/config/` 下创建新协议目录，添加配置文件
+2. **前端**：在 `frontend/protocols/` 下创建新协议目录，添加页面和脚本
+3. **路由**：在 `backend/main.go` 中注册新协议的路由
 
 ## 故障排除
 
-### 🚨 常见问题
+### 常见问题
 
-1. **端口被占用**：
-   - 错误：`bind: address already in use`
-   - 解决：修改 `backend/main.go` 中的端口号，或关闭占用8080端口的程序
+| 问题 | 解决方案 |
+|------|----------|
+| 端口被占用 | 修改 `main.go` 中的端口号，或关闭占用8080端口的程序 |
+| Go未安装 | 安装Go 1.21+，确保添加到PATH环境变量 |
+| 文件上传失败 | 检查 `uploads/` 目录权限 |
 
-2. **Go未安装**：
-   - 错误：`'go' is not recognized`
-   - 解决：安装Go 1.21+，确保添加到PATH环境变量
+### 调试命令
 
-3. **文件上传失败**：
-   - 错误：文件上传后无法解析
-   - 解决：检查uploads目录权限，确保程序有写入权限
+```bash
+# 查看端口占用
+netstat -ano | findstr :8080
 
-4. **程序无法启动**：
-   - 检查是否有其他程序占用8080端口
-   - 确保Go环境正确安装
-   - 检查防火墙设置
+# 强制关闭进程
+taskkill /PID [进程ID] /F
 
-### 🔧 调试方法
-
-1. **查看端口占用**：
-   ```bash
-   netstat -ano | findstr :8080
-   ```
-
-2. **强制关闭进程**：
-   ```bash
-   taskkill /PID [进程ID] /F
-   ```
-
-3. **检查Go环境**：
-   ```bash
-   go version
-   ```
+# 检查Go环境
+go version
+```
 
 ## 开发说明
 
-### 🛠️ 开发环境
+### 技术架构
+```
+用户上传CSV → 前端验证 → 后端接收存储 → 选择协议解析 → 加载配置规则 → 返回增强数据 → 前端渲染展示
+```
+
+### 开发环境
 - Go 1.21+
-- 现代浏览器（Chrome、Firefox、Edge等）
+- 现代浏览器（Chrome、Firefox、Edge）
 - 文本编辑器或IDE
 
-### 📝 代码结构
-- **前端**：纯原生JavaScript，无框架依赖
-- **后端**：Go + Gin框架，RESTful API设计
-- **数据流**：前端 → API → 后端服务 → 文件系统
-
-### 🔄 更新日志
-- v1.0.0：基础CSV解析功能
-- v1.1.0：添加CAN/CANOPEN协议支持
-- v1.2.0：优化用户体验，修复文件名显示问题
+### 更新日志
+- **v1.0.0**：基础CSV解析功能
+- **v1.1.0**：添加CAN/CANOPEN协议支持
+- **v1.2.0**：优化用户体验，修复文件名显示问题
+- **v1.3.0**：添加配置驱动的数据展示增强功能
