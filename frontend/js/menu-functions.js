@@ -299,8 +299,13 @@ function searchMessages() {
         tableHTML = `<tr><td colspan="4" style="text-align: center; color: #999;">未找到匹配的消息</td></tr>`;
     } else {
         tableHTML = filteredRows.map(item => {
+            // 获取行高亮样式
+            const highlightStyle = typeof getRowHighlightStyle === 'function' ? getRowHighlightStyle(item.row) : null;
+            const rowStyle = highlightStyle ?
+                `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
+
             return `
-                <tr>
+                <tr style="${rowStyle}">
                     ${item.row.map((cell, colIndex) => {
                 const width = colIndex === 0 ? '280px' : 'auto';
                 const cellText = escapeHtml(cell);
@@ -309,7 +314,10 @@ function searchMessages() {
                     new RegExp(escapeHtml(searchTerm), 'gi'),
                     match => `<mark>${match}</mark>`
                 );
-                return `<td style="width: ${width}" title="${cellText}">${highlightedText}</td>`;
+                const cellStyle = highlightStyle && highlightStyle.textColor ?
+                    `width: ${width}; color: ${highlightStyle.textColor};` :
+                    `width: ${width}`;
+                return `<td style="${cellStyle}" title="${cellText}">${highlightedText}</td>`;
             }).join('')}
                 </tr>
             `;

@@ -1,0 +1,56 @@
+{
+    "highlights": [
+        {
+            "match": "Generator Status / Error",
+            "matchType": "contains",
+            "backgroundColor": "#ffebee",
+            "textColor": "#c62828",
+            "description": "发电机状态/错误消息"
+        },
+        {
+            "match": "Set Record Parameters",
+            "matchType": "contains",
+            "backgroundColor": "#e8f5e9",
+            "textColor": "#2e7d32",
+            "description": "设置记录参数消息"
+        },
+        {
+            "match": "Set Acquisition Command",
+            "matchType": "contains",
+            "backgroundColor": "#e3f2fd",
+            "textColor": "#1565c0",
+            "description": "设置采集命令消息"
+        }
+    ],
+    "_description": "行高亮配置文件",
+    "_usage": {
+        "match": "要匹配的文本内容",
+        "matchType": "匹配类型: contains(包含), equals(完全匹配), startsWith(以...开头), endsWith(以...结尾)",
+        "backgroundColor": "背景颜色(十六进制或CSS颜色名)",
+        "textColor": "文字颜色(十六进制或CSS颜色名)",
+        "description": "可选，配置项描述"
+    },
+    "_examples": [
+        {
+            "match": "Error",
+            "matchType": "contains",
+            "backgroundColor": "#ffebee",
+            "textColor": "#c62828",
+            "description": "错误类型消息标红"
+        },
+        {
+            "match": "Warning",
+            "matchType": "contains",
+            "backgroundColor": "#fff3e0",
+            "textColor": "#e65100",
+            "description": "警告类型消息标橙色"
+        },
+        {
+            "match": "Success",
+            "matchType": "contains",
+            "backgroundColor": "#e8f5e9",
+            "textColor": "#2e7d32",
+            "description": "成功类型消息标绿色"
+        }
+    ]
+}

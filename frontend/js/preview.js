@@ -2,6 +2,7 @@
 let unifiedRows = []; // 保存统一视图数据
 let hiddenMessageIds = new Set(); // 隐藏的消息ID集合
 let canDefinitions = {}; // CAN消息定义
+let rowHighlightConfig = { highlights: [] }; // 行高亮配置
 
 // 加载CAN定义
 async function loadCanDefinitions() {
@@ -19,10 +20,67 @@ async function loadCanDefinitions() {
     }
 }
 
+// 加载行高亮配置
+async function loadRowHighlightConfig() {
+    try {
+        const response = await fetch('/config/row_highlight_config.json');
+        if (response.ok) {
+            rowHighlightConfig = await response.json();
+        } else {
+            console.warn('无法加载行高亮配置文件');
+            rowHighlightConfig = { highlights: [] };
+        }
+    } catch (error) {
+        console.warn('加载行高亮配置失败:', error);
+        rowHighlightConfig = { highlights: [] };
+    }
+}
+
+// 根据配置获取行的高亮样式
+function getRowHighlightStyle(rowData) {
+    if (!rowHighlightConfig.highlights || rowHighlightConfig.highlights.length === 0) {
+        return null;
+    }
+
+    // 将行数据合并为一个字符串用于匹配
+    const rowText = Array.isArray(rowData) ? rowData.join(' ') : String(rowData);
+
+    for (const rule of rowHighlightConfig.highlights) {
+        let isMatch = false;
+        const matchText = rule.match;
+        const matchType = rule.matchType || 'contains';
+
+        switch (matchType) {
+            case 'equals':
+                isMatch = rowText === matchText;
+                break;
+            case 'startsWith':
+                isMatch = rowText.startsWith(matchText);
+                break;
+            case 'endsWith':
+                isMatch = rowText.endsWith(matchText);
+                break;
+            case 'contains':
+            default:
+                isMatch = rowText.includes(matchText);
+                break;
+        }
+
+        if (isMatch) {
+            return {
+                backgroundColor: rule.backgroundColor || null,
+                textColor: rule.textColor || null
+            };
+        }
+    }
+
+    return null;
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
-    // 先加载CAN定义
-    await loadCanDefinitions();
+    // 先加载CAN定义和行高亮配置
+    await Promise.all([loadCanDefinitions(), loadRowHighlightConfig()]);
     // 从URL参数获取文件名和协议
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
@@ -143,6 +201,35 @@ function showPreview(data, filename, protocol = 'CAN') {
         return false;
     };
 
+    // 辅助函数：根据ID获取description
+    const getDescriptionById = (id) => {
+        if (!id || id === 'N/A') {
+            return id;
+        }
+
+        const idLower = id.toLowerCase();
+
+        // 尝试直接通过hex匹配
+        if (canDefinitions[idLower]) {
+            const def = canDefinitions[idLower];
+            if (typeof def === 'object' && def.description) {
+                return def.description;
+            } else if (typeof def === 'string') {
+                return def;
+            }
+        }
+
+        // 尝试通过dec字段匹配
+        for (const key in canDefinitions) {
+            const def = canDefinitions[key];
+            if (typeof def === 'object' && def.dec === id) {
+                return def.description || id;
+            }
+        }
+
+        return id; // 如果找不到description，返回原始ID
+    };
+
     // 生成统一视图数据
     const maxRows = Math.min(data.rows.length, 100);
     unifiedRows = []; // 重置统一视图数据
@@ -180,7 +267,9 @@ function showPreview(data, filename, protocol = 'CAN') {
 
         // 只添加在can_definitions中定义的ID的行
         if (isIdInDefinitions(id)) {
-            unifiedRows.push({ id: id, row: [time, fromTo, id, dataField] });
+            // 获取description用于显示，原始id用于过滤
+            const descriptionForDisplay = getDescriptionById(id);
+            unifiedRows.push({ id: id, row: [time, fromTo, descriptionForDisplay, dataField] });
 
             // 收集唯一ID和对应的Meaning
             if (id && id !== 'N/A') {
@@ -270,11 +359,20 @@ function renderTable(totalRows) {
             if (!item || !item.row) {
                 return '';
             }
+
+            // 获取行高亮样式
+            const highlightStyle = getRowHighlightStyle(item.row);
+            const rowStyle = highlightStyle ?
+                `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
+
             return `
-                <tr>
+                <tr style="${rowStyle}">
                     ${item.row.map((cell, colIndex) => {
                 const width = columnWidths[colIndex] || 'auto';
-                return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
+                const cellStyle = highlightStyle && highlightStyle.textColor ?
+                    `width: ${width}; color: ${highlightStyle.textColor};` :
+                    `width: ${width}`;
+                return `<td style="${cellStyle}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
             }).join('')}
                 </tr>
             `;
