@@ -26,47 +26,66 @@
             <div class="col-12">
                 <div class="card shadow-lg">
                     <div class="card-body p-4">
-                        <!-- 拖拽上传区域 -->
-                        <div class="upload-area border border-3 border-dashed rounded-3 p-5 text-center"
-                            id="uploadArea">
-                            <div class="upload-content">
-                                <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
-                                <h4 class="mb-3">拖拽CSV文件到此处或点击选择文件</h4>
-                                <p class="text-muted mb-4">支持.csv格式文件</p>
-                                <input type="file" id="fileInput" accept=".csv" class="d-none">
-                                <button class="btn btn-primary btn-lg"
-                                    onclick="document.getElementById('fileInput').click()">
-                                    <i class="bi bi-folder2-open me-2"></i>选择文件
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 协议选择区域 -->
-                        <div class="mt-4 protocol-selector">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <label class="protocol-label">
-                                    <i class="bi bi-gear-fill me-2"></i>选择解析协议
-                                </label>
-                                <div class="protocol-toggle-group">
-                                    <button class="protocol-btn active" id="canBtn" data-protocol="CAN">
-                                        <i class="bi bi-cpu me-1"></i>
-                                        <span>CAN (FIXED)</span>
-                                    </button>
-                                    <button class="protocol-btn" id="canopenBtn" data-protocol="CANOPEN">
-                                        <i class="bi bi-hdd-network me-1"></i>
-                                        <span>CANOPEN (Mobiled)</span>
-                                    </button>
+                        <div class="row g-4">
+                            <!-- 左侧：使用说明 -->
+                            <div class="col-lg-4">
+                                <div class="h-100 p-4 rounded-3"
+                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <h5 class="text-white mb-4">
+                                        <i class="bi bi-book me-2"></i>使用说明
+                                    </h5>
+                                    <div class="d-flex mb-4">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center"
+                                                style="width: 36px; height: 36px; font-weight: bold;">1</div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="text-white mb-1">选择CSV文件</h6>
+                                            <p class="text-white-50 small mb-0">拖拽或点击右侧区域上传需要解析的CSV文件</p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center"
+                                                style="width: 36px; height: 36px; font-weight: bold;">2</div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6 class="text-white mb-1">选择解析协议</h6>
+                                            <p class="text-white-50 small mb-0">
+                                                在已上传文件列表中选择对应协议：<br>
+                                                <span class="badge bg-primary mt-1">FixedRAD → CAN解析</span><br>
+                                                <span class="badge bg-info mt-1">Mobiled → CANOPEN解析</span>
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- 上传进度 -->
-                        <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
-                            <div class="progress mb-2" style="height: 8px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressFill"
-                                    role="progressbar" style="width: 0%"></div>
+                            <!-- 右侧：拖拽上传区域 -->
+                            <div class="col-lg-8">
+                                <div class="upload-area border border-3 border-dashed rounded-3 p-5 text-center h-100 d-flex align-items-center justify-content-center"
+                                    id="uploadArea">
+                                    <div class="upload-content">
+                                        <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
+                                        <h4 class="mb-3">拖拽CSV文件到此处或点击选择文件</h4>
+                                        <p class="text-muted mb-4">支持.csv格式文件</p>
+                                        <input type="file" id="fileInput" accept=".csv" class="d-none">
+                                        <button class="btn btn-primary btn-lg"
+                                            onclick="document.getElementById('fileInput').click()">
+                                            <i class="bi bi-folder2-open me-2"></i>选择文件
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 上传进度 -->
+                                <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
+                                    <div class="progress mb-2" style="height: 8px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                            id="progressFill" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <p class="text-center mb-0" id="progressText">上传中...</p>
+                                </div>
                             </div>
-                            <p class="text-center mb-0" id="progressText">上传中...</p>
                         </div>
                     </div>
                 </div>

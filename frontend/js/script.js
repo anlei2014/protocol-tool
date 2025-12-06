@@ -1,11 +1,9 @@
 // 全局变量
 let currentFiles = [];
-let selectedProtocol = 'CAN'; // 默认选择CAN协议
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function () {
     initializeUpload();
-    initializeProtocolSelection();
     loadFiles();
 });
 
@@ -49,41 +47,6 @@ function initializeUpload() {
             uploadFile(files[0]);
         }
     });
-}
-
-// 初始化协议选择
-function initializeProtocolSelection() {
-    const canBtn = document.getElementById('canBtn');
-    const canopenBtn = document.getElementById('canopenBtn');
-
-    canBtn.addEventListener('click', () => {
-        selectProtocol('CAN');
-    });
-
-    canopenBtn.addEventListener('click', () => {
-        selectProtocol('CANOPEN');
-    });
-}
-
-// 选择协议
-function selectProtocol(protocol) {
-    selectedProtocol = protocol;
-
-    // 更新按钮状态
-    document.querySelectorAll('.protocol-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    const canBtn = document.getElementById('canBtn');
-    const canopenBtn = document.getElementById('canopenBtn');
-
-    if (protocol === 'CAN') {
-        canBtn.classList.add('active');
-    } else {
-        canopenBtn.classList.add('active');
-    }
-
-    showMessage(`已选择 ${protocol} 协议`, 'info');
 }
 
 // 上传文件
