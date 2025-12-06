@@ -305,11 +305,40 @@ function toggleMessageFilter(messageId) {
 
     const uniqueIds = Array.from(new Set(unifiedRows.map(item => item.id))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-    messageList.innerHTML = uniqueIds.map(id => `
+    messageList.innerHTML = uniqueIds.map(id => {
+        // 从can_definitions获取描述
+        let description = '';
+        const idLower = id.toLowerCase();
+
+        // 尝试从canDefinitions中获取更详细的信息
+        if (canDefinitions[idLower]) {
+            const def = canDefinitions[idLower];
+            if (typeof def === 'object' && def.description) {
+                description = def.description;
+            } else if (typeof def === 'string') {
+                description = def;
+            }
+        } else {
+            // 如果直接匹配失败，尝试通过dec字段匹配
+            for (const key in canDefinitions) {
+                const def = canDefinitions[key];
+                if (typeof def === 'object' && def.dec === id) {
+                    description = def.description;
+                    break;
+                }
+            }
+        }
+
+        // 格式化显示：0xID - Description
+        const displayId = '0x' + id.toUpperCase();
+        const displayText = description ? `${displayId} - ${description}` : displayId;
+
+        return `
         <div class="list-group-item list-group-item-action message-filter-item ${hiddenMessageIds.has(id) ? 'filtered' : ''}" data-message-id="${escapeHtml(id)}">
-            <span class="message-status-icon"></span><span title="${escapeHtml(id)}">${escapeHtml(id)}</span>
+            <span class="message-status-icon"></span><span title="${escapeHtml(displayText)}">${escapeHtml(displayText)}</span>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     // 重新绑定点击事件
     messageList.querySelectorAll('.message-filter-item').forEach(item => {

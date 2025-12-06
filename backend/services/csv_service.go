@@ -226,6 +226,13 @@ func (s *CSVService) processDataByProtocol(headers []string, rows [][]string, pr
 	}
 }
 
+// CANDefinition 表示一个CAN消息定义
+type CANDefinition struct {
+	Hex         string `json:"hex"`
+	Dec         string `json:"dec"`
+	Description string `json:"description"`
+}
+
 // loadCANDefinitions 加载CAN ID定义
 func (s *CSVService) loadCANDefinitions() (map[string]string, error) {
 	configPath := filepath.Join("config", "can_definitions.json")
@@ -235,9 +242,16 @@ func (s *CSVService) loadCANDefinitions() (map[string]string, error) {
 		return make(map[string]string), nil
 	}
 
-	var definitions map[string]string
-	if err := json.Unmarshal(file, &definitions); err != nil {
+	// 解析嵌套的JSON对象结构
+	var rawDefinitions map[string]CANDefinition
+	if err := json.Unmarshal(file, &rawDefinitions); err != nil {
 		return nil, fmt.Errorf("解析can_definitions.json失败: %v", err)
+	}
+
+	// 转换为 ID -> Description 的映射
+	definitions := make(map[string]string)
+	for id, def := range rawDefinitions {
+		definitions[id] = def.Description
 	}
 
 	return definitions, nil
