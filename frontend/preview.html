@@ -163,11 +163,14 @@
                 <div class="col-12 h-100">
                     <div class="card shadow h-100 border-0">
                         <div class="card-body p-0 h-100">
-                            <div class="row g-0 h-100">
+                            <div class="d-flex h-100" id="splitContainer">
                                 <!-- 左侧：消息列表 -->
-                                <div class="col-md-2 h-100 border-end d-flex flex-column" id="sidebarColumn">
-                                    <div class="card-header py-2 bg-light border-bottom">
-                                        <h6 class="mb-0 small fw-bold" id="sidebarTitle">Available CAN messages</h6>
+                                <div class="h-100 border-end d-flex flex-column" id="sidebarColumn"
+                                    style="width: 350px; min-width: 150px; max-width: 500px;">
+                                    <div class="card-header py-2 border-bottom"
+                                        style="background: linear-gradient(135deg, #6022A6 0%, #3E166E 100%);">
+                                        <h6 class="mb-0 small fw-bold text-white" id="sidebarTitle">Available CAN
+                                            messages</h6>
                                     </div>
                                     <div class="flex-grow-1 overflow-auto" id="messageList">
                                         <div class="text-center py-4">
@@ -178,8 +181,11 @@
                                     </div>
                                 </div>
 
+                                <!-- 可拖拽分隔条 -->
+                                <div class="sidebar-resizer" id="sidebarResizer"></div>
+
                                 <!-- 右侧：统一表格视图 -->
-                                <div class="col-md-10 h-100 d-flex flex-column" id="tableColumn">
+                                <div class="flex-grow-1 h-100 d-flex flex-column" id="tableColumn">
                                     <div class="table-responsive flex-grow-1">
                                         <table class="table table-sm table-striped table-hover mb-0" id="dataTable">
                                             <thead class="table-dark sticky-top" id="tableHead">

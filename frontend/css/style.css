@@ -605,3 +605,33 @@ transition: all 0.2s ease;
 .table th.resizing .resize-handle::before {
     opacity: 0;
 }
+
+/* 侧边栏可拖拽分隔条 */
+.sidebar-resizer {
+    width: 6px;
+    background: linear-gradient(to right, #e9ecef, #dee2e6, #e9ecef);
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+
+.sidebar-resizer:hover {
+    background: linear-gradient(to right, #6c757d, #495057, #6c757d);
+}
+
+.sidebar-resizer.resizing {
+    background: linear-gradient(to right, #0d6efd, #0a58ca, #0d6efd);
+}
+
+/* 字体大小设置 */
+.table {
+    font-size: 13px;
+}
+
+#messageList {
+    font-size: 12px;
+}
+
+.navbar {
+    font-size: 14px;
+}

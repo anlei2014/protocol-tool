@@ -90,10 +90,11 @@ function showPreview(data, filename, protocol = 'CAN') {
 
     // 统一列映射：Time, From->To, Id, Data
     const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data'];
+    const columnWidths = ['280px', '240px', '250px', 'auto']; // Time, From->To, Id, Data
     tableHead.innerHTML = `
         <tr>
             ${unifiedHeaders.map((h, index) => {
-        const width = index === 0 ? '280px' : 'auto';
+        const width = columnWidths[index];
         return `<th style="width: ${width}">${h}<div class="resize-handle"></div></th>`;
     }).join('')}
         </tr>
@@ -264,6 +265,7 @@ function renderTable(totalRows) {
     if (filteredRows.length === 0) {
         tableHTML = `<tr><td colspan="4" style="text-align: center; color: #999;">没有数据</td></tr>`;
     } else {
+        const columnWidths = ['280px', '120px', '80px', 'auto']; // Time, From->To, Id, Data
         tableHTML = filteredRows.map(item => {
             if (!item || !item.row) {
                 return '';
@@ -271,7 +273,7 @@ function renderTable(totalRows) {
             return `
                 <tr>
                     ${item.row.map((cell, colIndex) => {
-                const width = colIndex === 0 ? '280px' : 'auto';
+                const width = columnWidths[colIndex] || 'auto';
                 return `<td style="width: ${width}" title="${escapeHtml(cell)}">${escapeHtml(cell)}</td>`;
             }).join('')}
                 </tr>
@@ -459,3 +461,47 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// 侧边栏拖拽调整宽度
+function initSidebarResize() {
+    const resizer = document.getElementById('sidebarResizer');
+    const sidebar = document.getElementById('sidebarColumn');
+
+    if (!resizer || !sidebar) return;
+
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = sidebar.offsetWidth;
+        resizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        const deltaX = e.clientX - startX;
+        const newWidth = Math.max(150, Math.min(500, startWidth + deltaX));
+        sidebar.style.width = newWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            resizer.classList.remove('resizing');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+}
+
+// 页面加载后初始化侧边栏拖拽
+document.addEventListener('DOMContentLoaded', function () {
+    initSidebarResize();
+});
