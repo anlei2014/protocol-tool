@@ -5,6 +5,7 @@ let canDefinitions = {}; // CAN消息定义
 let nameDefinitions = {}; // Name字段到Id描述的映射
 let rowHighlightConfig = { highlights: [] }; // 行高亮配置
 let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
+let dataParserConfig = {}; // CAN数据解析配置
 
 // 加载CAN定义
 async function loadCanDefinitions() {
@@ -68,6 +69,219 @@ async function loadFromToMapping() {
         console.warn('加载From->To映射配置失败:', error);
         fromToMapping = { rules: {}, separator: ' => ' };
     }
+}
+
+// 加载数据解析配置
+async function loadDataParserConfig() {
+    try {
+        const response = await fetch('/config/can/data_parser.json');
+        if (response.ok) {
+            dataParserConfig = await response.json();
+        } else {
+            console.warn('无法加载数据解析配置文件');
+            dataParserConfig = {};
+        }
+    } catch (error) {
+        console.warn('加载数据解析配置失败:', error);
+        dataParserConfig = {};
+    }
+}
+
+// 解析按Name匹配的数据（如RTB信号）
+function parseNameData(name) {
+    if (!name) return null;
+
+    const config = dataParserConfig[name];
+    if (!config || config.matchBy !== 'name') return null;
+
+    // 返回配置中的displayText
+    return config.displayText || null;
+}
+
+// 解析CAN数据字节（按Z0-Z7 LSB-MSB顺序）
+function parseCanData(canId, dataBytes) {
+    if (!canId || !dataBytes) return null;
+
+    const idLower = canId.toLowerCase();
+    const config = dataParserConfig[idLower];
+    if (!config || !config.bytes) return null;
+
+    // 将数据字符串分割为字节数组
+    const bytes = dataBytes.trim().split(/\s+/);
+    if (bytes.length === 0) return null;
+
+    const parsedFields = [];
+
+    // 遍历配置的字节解析规则（按order字段排序，如果有的话）
+    const byteRanges = Object.keys(config.bytes).sort((a, b) => {
+        const orderA = config.bytes[a].order !== undefined ? config.bytes[a].order : 999;
+        const orderB = config.bytes[b].order !== undefined ? config.bytes[b].order : 999;
+        return orderA - orderB;
+    });
+    for (const byteRange of byteRanges) {
+        const fieldConfig = config.bytes[byteRange];
+        const fieldName = fieldConfig.name || byteRange;
+
+        let startByte, endByte;
+        if (byteRange.includes('-')) {
+            const [start, end] = byteRange.split('-').map(Number);
+            startByte = start;
+            endByte = end;
+        } else {
+            startByte = endByte = parseInt(byteRange);
+        }
+
+        // 检查字节范围是否有效
+        if (startByte >= bytes.length) continue;
+
+        // 获取相关字节
+        const relevantBytes = bytes.slice(startByte, Math.min(endByte + 1, bytes.length));
+        const rawHex = relevantBytes.join(' ');
+
+        let value = null;
+        let displayValue = null;
+
+        switch (fieldConfig.type) {
+            case 'enum':
+                // 单字节枚举值
+                const enumKey = relevantBytes[0] ? relevantBytes[0].toLowerCase() : null;
+                if (enumKey && fieldConfig.values && fieldConfig.values[enumKey]) {
+                    displayValue = fieldConfig.values[enumKey];
+                } else {
+                    displayValue = rawHex;
+                }
+                break;
+
+            case 'uint8':
+                value = parseInt(relevantBytes[0], 16);
+                if (fieldConfig.scale) value *= fieldConfig.scale;
+                let uint8Str = fieldConfig.unit ? `${value}${fieldConfig.unit}` : `${value}`;
+                displayValue = fieldName && fieldName !== byteRange ? `${fieldName} ${uint8Str}` : uint8Str;
+                break;
+
+            case 'uint16_le':
+                // 小端序16位无符号整数
+                if (relevantBytes.length >= 2) {
+                    value = parseInt(relevantBytes[0], 16) + (parseInt(relevantBytes[1], 16) << 8);
+                    if (fieldConfig.scale) {
+                        const precision = fieldConfig.precision !== undefined ? fieldConfig.precision : 1;
+                        value = (value * fieldConfig.scale).toFixed(precision);
+                    }
+                    let valueStr = fieldConfig.unit ? `${value}${fieldConfig.unit}` : `${value}`;
+                    // 如果有字段名且不为空，添加前缀
+                    displayValue = fieldName && fieldName !== byteRange ? `${fieldName} ${valueStr}` : valueStr;
+                }
+                break;
+
+            case 'uint32_le':
+                // 小端序32位无符号整数
+                if (relevantBytes.length >= 4) {
+                    value = parseInt(relevantBytes[0], 16) +
+                        (parseInt(relevantBytes[1], 16) << 8) +
+                        (parseInt(relevantBytes[2], 16) << 16) +
+                        (parseInt(relevantBytes[3], 16) << 24);
+                    if (fieldConfig.scale) value = (value * fieldConfig.scale).toFixed(2);
+                    let valueStr = fieldConfig.unit ? `${value}${fieldConfig.unit}` : `${value}`;
+                    // 如果有字段名且不为空，添加前缀
+                    displayValue = fieldName && fieldName !== byteRange ? `${fieldName} ${valueStr}` : valueStr;
+                }
+                break;
+
+            case 'uint24_le':
+                // 小端序24位无符号整数（3字节）
+                if (relevantBytes.length >= 3) {
+                    value = parseInt(relevantBytes[0], 16) +
+                        (parseInt(relevantBytes[1], 16) << 8) +
+                        (parseInt(relevantBytes[2], 16) << 16);
+                    if (fieldConfig.scale) {
+                        const precision = fieldConfig.precision !== undefined ? fieldConfig.precision : 1;
+                        value = (value * fieldConfig.scale).toFixed(precision);
+                    }
+                    let valueStr = fieldConfig.unit ? `${value}${fieldConfig.unit}` : `${value}`;
+                    displayValue = fieldName && fieldName !== byteRange ? `${fieldName} ${valueStr}` : valueStr;
+                }
+                break;
+
+            case 'float32_le':
+                // 小端序32位浮点数
+                if (relevantBytes.length >= 4) {
+                    const buffer = new ArrayBuffer(4);
+                    const view = new DataView(buffer);
+                    for (let i = 0; i < 4; i++) {
+                        view.setUint8(i, parseInt(relevantBytes[i], 16));
+                    }
+                    value = view.getFloat32(0, true); // true表示小端序
+                    const precision = fieldConfig.precision || 2;
+                    let floatStr = fieldConfig.unit ? `${value.toFixed(precision)}${fieldConfig.unit}` : `${value.toFixed(precision)}`;
+                    displayValue = fieldName && fieldName !== byteRange ? `${fieldName} ${floatStr}` : floatStr;
+                }
+                break;
+
+            case 'hex8':
+                value = parseInt(relevantBytes[0], 16);
+                // 支持 zeroText 和 nonZeroText 配置
+                if (value === 0 && fieldConfig.zeroText) {
+                    displayValue = fieldConfig.zeroText;
+                } else if (value !== 0 && fieldConfig.nonZeroText) {
+                    displayValue = fieldConfig.nonZeroText;
+                } else {
+                    displayValue = `0x${relevantBytes[0].toUpperCase()}`;
+                }
+                break;
+
+            case 'hex16_le':
+                if (relevantBytes.length >= 2) {
+                    value = parseInt(relevantBytes[0], 16) + (parseInt(relevantBytes[1], 16) << 8);
+                    displayValue = `0x${relevantBytes[1].toUpperCase()}${relevantBytes[0].toUpperCase()}`;
+                }
+                break;
+
+            case 'bitfield':
+                // 位字段解析：解析单字节中的多个位字段
+                if (relevantBytes[0] && fieldConfig.fields) {
+                    const byteValue = parseInt(relevantBytes[0], 16);
+                    const fieldResults = [];
+
+                    for (const field of fieldConfig.fields) {
+                        const mask = ((1 << field.bits) - 1) << field.start;
+                        const fieldValue = (byteValue & mask) >> field.start;
+
+                        let fieldDisplay;
+                        if (field.values && field.values[fieldValue.toString()]) {
+                            fieldDisplay = field.values[fieldValue.toString()];
+                        } else if (field.values && field.values[fieldValue]) {
+                            fieldDisplay = field.values[fieldValue];
+                        } else {
+                            fieldDisplay = fieldValue.toString();
+                        }
+
+                        if (field.name) {
+                            fieldResults.push(`${field.name}:${fieldDisplay}`);
+                        } else {
+                            fieldResults.push(fieldDisplay);
+                        }
+                    }
+
+                    displayValue = fieldResults.join(' - ');
+                    value = parseInt(relevantBytes[0], 16);
+                }
+                break;
+
+            default:
+                displayValue = rawHex;
+        }
+
+        // 如果配置了 hideIfZero 且值为0，则不显示该字段
+        if (fieldConfig.hideIfZero && (value === 0 || value === null)) {
+            continue;
+        }
+
+        if (displayValue !== null) {
+            parsedFields.push(displayValue);
+        }
+    }
+
+    return parsedFields.length > 0 ? parsedFields.join(' - ') : null;
 }
 
 // 根据Name字段转换From->To显示
@@ -203,7 +417,7 @@ function applyTableStyles() {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
     // 先加载所有配置
-    await Promise.all([loadCanDefinitions(), loadNameDefinitions(), loadRowHighlightConfig(), loadFromToMapping(), loadTableStyleConfig()]);
+    await Promise.all([loadCanDefinitions(), loadNameDefinitions(), loadRowHighlightConfig(), loadFromToMapping(), loadDataParserConfig(), loadTableStyleConfig()]);
     // 从URL参数获取文件名和协议
     const urlParams = new URLSearchParams(window.location.search);
     const filename = urlParams.get('file');
@@ -269,9 +483,9 @@ function showPreview(data, filename, protocol = 'CAN') {
     }
 
 
-    // 统一列映射：Time, From->To, Id, Data
-    const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data'];
-    const columnWidths = ['280px', '240px', '250px', 'auto']; // Time, From->To, Id, Data
+    // 统一列映射：Time, From->To, Id, Data, Description
+    const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data', 'Description'];
+    const columnWidths = ['200px', '180px', '300px', '150px', 'auto']; // Time, From->To, Id, Data, Description
     tableHead.innerHTML = `
         <tr>
             ${unifiedHeaders.map((h, index) => {
@@ -405,8 +619,37 @@ function showPreview(data, filename, protocol = 'CAN') {
         // 只添加在can_definitions中定义的ID的行
         if (isIdInDefinitions(id)) {
             // 获取description用于显示，原始id用于过滤
-            const descriptionForDisplay = getDescriptionById(id);
-            unifiedRows.push({ id: id, row: [time, fromTo, descriptionForDisplay, dataField] });
+            const description = getDescriptionById(id);
+            // 格式化Id列显示：
+            // - 对于十六进制CAN ID：显示 "0xID - Description"
+            // - 对于非十六进制ID（如RTB消息）：只显示 description
+            const isHexId = /^[0-9a-fA-F]+$/.test(id);
+            let idColumnDisplay;
+            if (isHexId) {
+                const formattedId = '0x' + id.toString().toUpperCase();
+                idColumnDisplay = description && description !== id ? `${formattedId} - ${description}` : formattedId;
+            } else {
+                // 非十六进制ID，只显示description
+                idColumnDisplay = description || id;
+            }
+
+            // 解析数据含义，放到单独的Description列
+            let descriptionField = '';
+            if (parsedData && parsedId) {
+                // 尝试解析CAN数据
+                const parsedMeaning = parseCanData(parsedId, parsedData);
+                if (parsedMeaning) {
+                    descriptionField = parsedMeaning;
+                }
+            } else if (name) {
+                // 尝试按Name解析（用于RTB等信号）
+                const nameMeaning = parseNameData(name);
+                if (nameMeaning) {
+                    descriptionField = nameMeaning;
+                }
+            }
+
+            unifiedRows.push({ id: id, row: [time, fromTo, idColumnDisplay, dataField, descriptionField] });
 
             // 收集唯一ID和对应的Meaning
             if (id && id !== 'N/A') {
@@ -505,7 +748,7 @@ function renderTable(totalRows) {
 
     // 如果 unifiedRows 为空，不渲染
     if (!unifiedRows || unifiedRows.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">没有数据</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">没有数据</td></tr>';
         return;
     }
 
@@ -515,9 +758,9 @@ function renderTable(totalRows) {
     // 渲染表格数据
     let tableHTML = '';
     if (filteredRows.length === 0) {
-        tableHTML = `<tr><td colspan="4" style="text-align: center; color: #999;">没有数据</td></tr>`;
+        tableHTML = `<tr><td colspan="5" style="text-align: center; color: #999;">没有数据</td></tr>`;
     } else {
-        const columnWidths = ['280px', '120px', '80px', 'auto']; // Time, From->To, Id, Data
+        const columnWidths = ['200px', '180px', '300px', '200px', 'auto']; // Time, From->To, Id, Data, Description
         tableHTML = filteredRows.map(item => {
             if (!item || !item.row) {
                 return '';
@@ -545,7 +788,7 @@ function renderTable(totalRows) {
     // 若总数超过100，添加提示
     if (totalRows > 100) {
         const hiddenCount = unifiedRows.length - filteredRows.length;
-        tableHTML += `<tr><td colspan="4" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
+        tableHTML += `<tr><td colspan="5" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
     }
 
     // 一次性设置innerHTML

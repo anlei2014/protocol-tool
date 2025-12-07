@@ -1,39 +1,4 @@
 ﻿Type,Source,Target,Name,Time,Buffer
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,string=2cf:8:[10 40 ff 37 48 c1 0a 00]
-publish,TELE-IMEP,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,40:00:0 AnodelEellstrike long=2:ibasellthis long=2Eoverheat boolean=0
-receive_request,TELE-IMEP,GCS-Mgr,N/A,2025-10-21 14:40:0,string=2cf:8:[10 40 ff 37 48 c1 0a 00]
-receive_reply,TELE-IMEP,GCS-Mgr,N/A,2025-10-21 14:40:0,string=2cf:8:[10 40 ff 37 48 c1 0a 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-10-21 14:40:0,string=2cf:8:[10 80 f2 aa 47 c8 16 00]
-receive,N/A,N/A,2BEzellFFFB05,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,iasedEllassanerMallelp,2025-10-21 14:40:0,string=2cf:8:[10 40 89 35 48 c1 0b 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,IBA-qbvSvc,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,TELE-IMEP,N/A,N/A,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-receive,N/A,N/A,IBA-qbvSvc,2025-10-21 14:40:0,string=4be:8:[11 00 57 17 45 5a 00 00]
-publish,XRTechMgr,N/A,TO_JEDI_MSG,2025-11-24 17:03:36.739.127,string=1cc:1:[03 00 00 00 00 00 00 00]
-publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 17:03:36.741.810,string=208:8:[03 00 00 00 00 00 00 00]
 publish,XRTechMgr,N/A,TO_JEDI_MSG,2025-11-14 17:03:36.739.127,string=1cc:1:[03 00 00 00 00 00 00 00]
 publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-14 17:03:36.741.810,string=208:8:[03 00 00 00 00 00 00 00]
 receive,N/A,XRTechMgr,RTB0_EXP_ENABLE_HI,2025-11-14 17:03:36.947.731,string=ushort=0

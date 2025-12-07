@@ -1,0 +1,425 @@
+{
+    "1cc": {
+        "name": "Command Bitmap",
+        "bytes": {
+            "0": {
+                "name": "Cmd",
+                "type": "enum",
+                "values": {
+                    "00": "Stop Rotor/Filament",
+                    "01": "Hold Rotor",
+                    "03": "Prep Rotor/Filament",
+                    "04": "Diag Mode",
+                    "07": "Start Exposure",
+                    "ff": "Idle (0 Amps)"
+                }
+            }
+        }
+    },
+    "208": {
+        "name": "Generator Status",
+        "bytes": {
+            "0": {
+                "name": "Phase",
+                "type": "enum",
+                "values": {
+                    "00": "Idle/Init",
+                    "01": "PoweredUp/Idle",
+                    "02": "StandBy",
+                    "03": "PrepInProgress",
+                    "04": "Ready For Exp / HV OFF",
+                    "05": "HV ON",
+                    "06": "Error",
+                    "07": "TubeSwitching",
+                    "08": "Armed",
+                    "09": "Diag"
+                }
+            },
+            "1": {
+                "name": "ErrCode",
+                "type": "hex8",
+                "hideIfZero": true
+            },
+            "2": {
+                "name": "Display",
+                "type": "hex8",
+                "hideIfZero": true
+            },
+            "3": {
+                "name": "ErrClass",
+                "type": "hex8",
+                "hideIfZero": true
+            },
+            "4-5": {
+                "name": "GenErr",
+                "type": "hex16_le",
+                "hideIfZero": true
+            },
+            "6-7": {
+                "name": "ErrData",
+                "type": "hex16_le",
+                "hideIfZero": true
+            }
+        }
+    },
+    "1e0": {
+        "name": "Set Record Parameters",
+        "bytes": {
+            "0": {
+                "name": "Settings",
+                "type": "bitfield",
+                "fields": [
+                    {
+                        "name": "Focal",
+                        "start": 0,
+                        "bits": 3,
+                        "values": {
+                            "0": "N/A",
+                            "1": "Small",
+                            "2": "Large",
+                            "3": "Compressed",
+                            "4": "RFU",
+                            "5": "XLarge",
+                            "6": "RFU",
+                            "7": "RFU"
+                        }
+                    },
+                    {
+                        "name": "Speed",
+                        "start": 3,
+                        "bits": 1,
+                        "values": {
+                            "0": "High",
+                            "1": "Low"
+                        }
+                    },
+                    {
+                        "name": "Mode",
+                        "start": 4,
+                        "bits": 4,
+                        "values": {
+                            "0": "Diagnostics",
+                            "1": "1 point",
+                            "2": "2 points",
+                            "3": "3 points",
+                            "4": "CT",
+                            "5": "Cont fluoro",
+                            "6": "0 point",
+                            "7": "3 point mAs",
+                            "8": "Tomo Time",
+                            "9": "Tomo Ext",
+                            "10": "Pulsed fluoro with grid",
+                            "11": "Cine without Grid",
+                            "12": "Cine with Grid",
+                            "13": "Pulsed fluoro without grid",
+                            "14": "Over kV",
+                            "15": "No Load"
+                        }
+                    }
+                ]
+            },
+            "1": {
+                "name": "kV",
+                "type": "uint8",
+                "unit": "kV"
+            },
+            "2-3": {
+                "name": "mA",
+                "type": "uint16_le",
+                "scale": 0.1,
+                "unit": "mA"
+            },
+            "4-5": {
+                "name": "Time",
+                "type": "uint16_le",
+                "scale": 0.1,
+                "unit": "ms"
+            }
+        }
+    },
+    "1e1": {
+        "name": "Set Limited Parameters",
+        "bytes": {
+            "7": {
+                "order": 0,
+                "name": "",
+                "type": "hex8",
+                "zeroText": "Accepted",
+                "nonZeroText": "Rejected"
+            },
+            "0": {
+                "order": 1,
+                "name": "Settings",
+                "type": "bitfield",
+                "fields": [
+                    {
+                        "name": "Focal",
+                        "start": 0,
+                        "bits": 3,
+                        "values": {
+                            "0": "N/A",
+                            "1": "Small",
+                            "2": "Large",
+                            "3": "Compressed",
+                            "4": "RFU",
+                            "5": "XLarge",
+                            "6": "RFU",
+                            "7": "RFU"
+                        }
+                    },
+                    {
+                        "name": "Speed",
+                        "start": 3,
+                        "bits": 1,
+                        "values": {
+                            "0": "High",
+                            "1": "Low"
+                        }
+                    },
+                    {
+                        "name": "Mode",
+                        "start": 4,
+                        "bits": 4,
+                        "values": {
+                            "0": "Diagnostics",
+                            "1": "1 point",
+                            "2": "2 points",
+                            "3": "3 points",
+                            "4": "CT",
+                            "5": "Cont fluoro",
+                            "6": "0 point",
+                            "7": "3 point mAs",
+                            "8": "Tomo Time",
+                            "9": "Tomo Ext",
+                            "10": "Pulsed fluoro with grid",
+                            "11": "Cine HP",
+                            "12": "Cine LP",
+                            "13": "Pulsed fluoro without grid",
+                            "14": "Over kV",
+                            "15": "No Load"
+                        }
+                    }
+                ]
+            },
+            "1": {
+                "order": 2,
+                "name": "kV",
+                "type": "uint8",
+                "unit": "kV"
+            },
+            "2-3": {
+                "order": 3,
+                "name": "mA",
+                "type": "uint16_le",
+                "scale": 0.1,
+                "unit": "mA"
+            },
+            "4-5": {
+                "order": 4,
+                "name": "Time",
+                "type": "uint16_le",
+                "scale": 0.1,
+                "unit": "ms"
+            }
+        }
+    },
+    "1e6": {
+        "name": "Set Allowed Number of Exposures",
+        "bytes": {
+            "0-3": {
+                "name": "Allowed number of pulses/exposures =",
+                "type": "uint32_le"
+            }
+        }
+    },
+    "2bc": {
+        "name": "Actual Exp Parameters",
+        "bytes": {
+            "0-1": {
+                "order": 0,
+                "name": "kV =",
+                "type": "uint16_le",
+                "scale": 0.5,
+                "precision": 1,
+                "unit": "kV"
+            },
+            "2-3": {
+                "order": 1,
+                "name": "mA =",
+                "type": "uint16_le",
+                "scale": 0.1,
+                "precision": 1,
+                "unit": "mA"
+            },
+            "4-6": {
+                "order": 2,
+                "name": "mAs =",
+                "type": "uint24_le",
+                "scale": 0.1,
+                "precision": 1,
+                "unit": "mAs"
+            },
+            "7": {
+                "order": 3,
+                "name": "Spits =",
+                "type": "uint8"
+            }
+        }
+    },
+    "2c1": {
+        "name": "Detailed Actual Exp Parameters",
+        "bytes": {
+            "0-3": {
+                "order": 0,
+                "name": "Time =",
+                "type": "float32_le",
+                "precision": 3,
+                "unit": "s"
+            },
+            "4-7": {
+                "order": 1,
+                "name": "mAs =",
+                "type": "float32_le",
+                "precision": 2,
+                "unit": "mAs"
+            }
+        }
+    },
+    "2d1": {
+        "name": "Reply/Send Tube Warmup Status",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Tube1",
+                "type": "enum",
+                "values": {
+                    "00": "No Warmup",
+                    "01": "Warmup Need"
+                }
+            },
+            "1": {
+                "order": 1,
+                "name": "T1 Left =",
+                "type": "uint8",
+                "unit": "min"
+            },
+            "2": {
+                "order": 2,
+                "name": "Tube2",
+                "type": "enum",
+                "values": {
+                    "00": "No Warmup",
+                    "01": "Warmup Need"
+                }
+            },
+            "3": {
+                "order": 3,
+                "name": "T2 Left =",
+                "type": "uint8",
+                "unit": "min"
+            },
+            "4": {
+                "order": 4,
+                "name": "Tube3",
+                "type": "enum",
+                "values": {
+                    "00": "No Warmup",
+                    "01": "Warmup Need"
+                }
+            },
+            "5": {
+                "order": 5,
+                "name": "T3 Left =",
+                "type": "uint8",
+                "unit": "min"
+            },
+            "6": {
+                "order": 6,
+                "name": "Tube4",
+                "type": "enum",
+                "values": {
+                    "00": "No Warmup",
+                    "01": "Warmup Need"
+                }
+            },
+            "7": {
+                "order": 7,
+                "name": "T4 Left =",
+                "type": "uint8",
+                "unit": "min"
+            }
+        }
+    },
+    "2cf": {
+        "name": "Reply Thermal State",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Index",
+                "type": "enum",
+                "values": {
+                    "01": "Track Temp",
+                    "02": "Cap Temp",
+                    "03": "Base Temp",
+                    "04": "Joint/Stud Temp",
+                    "05": "Bearing Temp",
+                    "06": "Window Temp",
+                    "07": "Backplane Temp",
+                    "08": "Copper Temp",
+                    "09": "Rotor Temp",
+                    "10": "Tube1 Anode Heat",
+                    "11": "Tube1 Casing Heat",
+                    "20": "Tube2 Anode Heat",
+                    "21": "Tube2 Casing Heat",
+                    "50": "SC Supply Temp",
+                    "51": "SC Drive Temp",
+                    "52": "SC kV Measure Temp",
+                    "53": "SC kV Measure Temp2",
+                    "54": "DSP Supply Temp",
+                    "55": "DSP Drive Temp",
+                    "56": "DSP Rotor Temp",
+                    "60": "Analog Tank Temp",
+                    "61": "Analog Inverter Temp",
+                    "62": "Analog 3 Temp",
+                    "70": "Fan Cooling Time",
+                    "7e": "HUR Status",
+                    "7f": "Ambient Temp"
+                }
+            },
+            "1-4": {
+                "order": 1,
+                "name": "Value",
+                "type": "float32_le",
+                "precision": 1
+            },
+            "5-6": {
+                "order": 2,
+                "name": "HUR =",
+                "type": "uint16_le",
+                "scale": 0.01,
+                "precision": 2,
+                "unit": "%"
+            }
+        }
+    },
+    "RTB0_EXP_ENABLE_HI": {
+        "name": "Exposure Enable Signal",
+        "matchBy": "name",
+        "displayText": "Exposure Enable ON"
+    },
+    "RTB1_EXP_CMD_HI": {
+        "name": "Exposure Command Signal",
+        "matchBy": "name",
+        "displayText": "Exposure Command ON"
+    },
+    "RTB2_XRAY_ON_HI": {
+        "name": "X-Ray On Signal",
+        "matchBy": "name",
+        "displayText": "X-Ray ON"
+    },
+    "RTB2_XRAY_ON_LO": {
+        "name": "X-Ray Off Signal",
+        "matchBy": "name",
+        "displayText": "X-Ray OFF"
+    }
+}
