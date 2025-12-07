@@ -223,6 +223,171 @@
             }
         }
     },
+    "1f0": {
+        "name": "Configure AEC",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Cell",
+                "type": "bitfield",
+                "fields": [
+                    {
+                        "name": "L",
+                        "start": 0,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    },
+                    {
+                        "name": "C",
+                        "start": 1,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    },
+                    {
+                        "name": "R",
+                        "start": 2,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    }
+                ]
+            },
+            "1": {
+                "order": 1,
+                "name": "Density",
+                "type": "hex8"
+            },
+            "2": {
+                "order": 2,
+                "name": "Film/Screen",
+                "type": "enum",
+                "values": {
+                    "01": "Film1",
+                    "02": "Film2",
+                    "03": "Film3",
+                    "05": "Digital"
+                }
+            },
+            "4": {
+                "order": 3,
+                "name": "Cassette",
+                "type": "hex8"
+            },
+            "5": {
+                "order": 4,
+                "name": "IonChamber",
+                "type": "enum",
+                "values": {
+                    "01": "Chamber1",
+                    "02": "Chamber2",
+                    "03": "Chamber3",
+                    "04": "Chamber4",
+                    "05": "Camera Leloo"
+                }
+            },
+            "6": {
+                "order": 5,
+                "name": "Plexi =",
+                "type": "uint8",
+                "unit": "cm",
+                "hideIfZero": true
+            }
+        }
+    },
+    "1f1": {
+        "name": "Confirm AEC Configuration",
+        "bytes": {
+            "3": {
+                "order": 0,
+                "name": "",
+                "type": "hex8",
+                "zeroText": "AEC OK",
+                "nonZeroText": "AEC Rejected"
+            },
+            "0": {
+                "order": 1,
+                "name": "Cell",
+                "type": "bitfield",
+                "fields": [
+                    {
+                        "name": "L",
+                        "start": 0,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    },
+                    {
+                        "name": "C",
+                        "start": 1,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    },
+                    {
+                        "name": "R",
+                        "start": 2,
+                        "bits": 1,
+                        "values": {
+                            "0": "Off",
+                            "1": "On"
+                        }
+                    }
+                ]
+            },
+            "1": {
+                "order": 2,
+                "name": "Density",
+                "type": "hex8"
+            },
+            "2": {
+                "order": 3,
+                "name": "Film/Screen",
+                "type": "enum",
+                "values": {
+                    "01": "Film1",
+                    "02": "Film2",
+                    "03": "Film3",
+                    "05": "Digital"
+                }
+            },
+            "4": {
+                "order": 4,
+                "name": "Cassette",
+                "type": "hex8"
+            },
+            "5": {
+                "order": 5,
+                "name": "IonChamber",
+                "type": "enum",
+                "values": {
+                    "01": "Chamber1",
+                    "02": "Chamber2",
+                    "03": "Chamber3",
+                    "04": "Chamber4",
+                    "05": "Camera Leloo"
+                }
+            },
+            "6": {
+                "order": 6,
+                "name": "Plexi =",
+                "type": "uint8",
+                "unit": "cm",
+                "hideIfZero": true
+            }
+        }
+    },
     "1e6": {
         "name": "Set Allowed Number of Exposures",
         "bytes": {
@@ -282,6 +447,70 @@
                 "type": "float32_le",
                 "precision": 2,
                 "unit": "mAs"
+            }
+        }
+    },
+    "20d": {
+        "name": "Generator Identification",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Model",
+                "type": "hex8"
+            },
+            "1": {
+                "order": 1,
+                "name": "Type",
+                "type": "enum",
+                "values": {
+                    "00": "Unknown",
+                    "01": "CT",
+                    "02": "RAD",
+                    "03": "Vascular",
+                    "04": "Rad&RF"
+                }
+            },
+            "2": {
+                "order": 2,
+                "name": "ComMinor",
+                "type": "uint8"
+            },
+            "3": {
+                "order": 3,
+                "name": "ComMajor",
+                "type": "uint8"
+            }
+        }
+    },
+    "20f": {
+        "name": "System Identification",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Model",
+                "type": "hex8"
+            },
+            "1": {
+                "order": 1,
+                "name": "Type",
+                "type": "enum",
+                "values": {
+                    "00": "Unknown",
+                    "01": "CT",
+                    "02": "RAD",
+                    "03": "Vascular",
+                    "04": "Rad&RF"
+                }
+            },
+            "2": {
+                "order": 2,
+                "name": "ComMinor",
+                "type": "uint8"
+            },
+            "3": {
+                "order": 3,
+                "name": "ComMajor",
+                "type": "uint8"
             }
         }
     },
@@ -350,6 +579,216 @@
             }
         }
     },
+    "2ee": {
+        "name": "Get Generator Capabilities",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Request",
+                "type": "enum",
+                "values": {
+                    "01": "Get Max Power (kW)",
+                    "02": "Get Number of Tubes",
+                    "03": "Get Available Focal Spots",
+                    "04": "Get kV Min",
+                    "05": "Get kV Max",
+                    "06": "Get mA Min",
+                    "07": "Get mA Max",
+                    "08": "Get mAs Min",
+                    "09": "Get mAs Max",
+                    "0a": "Get Exp Time Min",
+                    "0b": "Get Exp Time Max",
+                    "0c": "Get Available Modes",
+                    "0d": "Get Generator ID",
+                    "0e": "Get Tube ID",
+                    "0f": "Get Modes Limitations"
+                }
+            },
+            "1-2": {
+                "order": 1,
+                "name": "Param",
+                "type": "hex16_le",
+                "hideIfZero": true
+            }
+        }
+    },
+    "2ef": {
+        "name": "Reply Generator Capabilities",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Reply",
+                "type": "enum",
+                "values": {
+                    "01": "Max Power (kW)",
+                    "02": "Number of Tubes",
+                    "03": "Available Focal Spots",
+                    "04": "kV Min",
+                    "05": "kV Max",
+                    "06": "mA Min",
+                    "07": "mA Max",
+                    "08": "mAs Min",
+                    "09": "mAs Max",
+                    "0a": "Exp Time Min",
+                    "0b": "Exp Time Max",
+                    "0c": "Available Modes",
+                    "0d": "Generator ID",
+                    "0e": "Tube ID",
+                    "0f": "Modes Limitations"
+                }
+            },
+            "1-2": {
+                "order": 1,
+                "name": "Value =",
+                "type": "uint16_le"
+            }
+        }
+    },
+    "460": {
+        "name": "Get staticId",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "ID",
+                "type": "enum",
+                "values": {
+                    "01": "kV Control Board",
+                    "02": "Rotor Board",
+                    "03": "1st Heater Board",
+                    "04": "Tube 1",
+                    "05": "HV Tank",
+                    "06": "Inverter",
+                    "07": "AC/DC Board",
+                    "08": "JEDI SW",
+                    "09": "Rotor FW",
+                    "0a": "1st Heater FW",
+                    "0b": "2nd Heater FW",
+                    "0c": "2nd Heater Board",
+                    "0d": "Ingrid Board",
+                    "0e": "Ingrid FW App",
+                    "0f": "Ingrid FW Boot",
+                    "10": "AEC FW",
+                    "14": "Interface Board",
+                    "19": "Tube 2",
+                    "1a": "JEDI Boot Ver",
+                    "1b": "JEDI FPGA Ver",
+                    "1c": "JEDI DSP Ver",
+                    "20": "JEDI DB SW",
+                    "36": "Interface Ver",
+                    "40": "Djinn App Ver",
+                    "41": "Djinn Boot Ver",
+                    "42": "Djinn DB Ver",
+                    "43": "Djinn FPGA Ver",
+                    "50": "Djinn Ctrl Board",
+                    "51": "Djinn Power Board",
+                    "52": "Djinn Tank Board",
+                    "54": "Djinn Tube"
+                }
+            }
+        }
+    },
+    "461": {
+        "name": "Reply staticId",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "ID",
+                "type": "enum",
+                "values": {
+                    "01": "kV Control Board",
+                    "02": "Rotor Board",
+                    "03": "1st Heater Board",
+                    "04": "Tube 1",
+                    "05": "HV Tank",
+                    "06": "Inverter",
+                    "07": "AC/DC Board",
+                    "08": "JEDI SW",
+                    "09": "Rotor FW",
+                    "0a": "1st Heater FW",
+                    "0b": "2nd Heater FW",
+                    "0c": "2nd Heater Board",
+                    "0d": "Ingrid Board",
+                    "0e": "Ingrid FW App",
+                    "0f": "Ingrid FW Boot",
+                    "10": "AEC FW",
+                    "14": "Interface Board",
+                    "19": "Tube 2",
+                    "1a": "JEDI Boot Ver",
+                    "1b": "JEDI FPGA Ver",
+                    "1c": "JEDI DSP Ver",
+                    "20": "JEDI DB SW",
+                    "36": "Interface Ver",
+                    "40": "Djinn App Ver",
+                    "41": "Djinn Boot Ver",
+                    "42": "Djinn DB Ver",
+                    "43": "Djinn FPGA Ver",
+                    "50": "Djinn Ctrl Board",
+                    "51": "Djinn Power Board",
+                    "52": "Djinn Tank Board",
+                    "54": "Djinn Tube"
+                }
+            },
+            "1-7": {
+                "order": 1,
+                "name": "Data",
+                "type": "ascii"
+            }
+        }
+    },
+    "46a": {
+        "name": "Get/Set data",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Index",
+                "type": "hex8"
+            },
+            "1-4": {
+                "order": 1,
+                "name": "Data",
+                "type": "hex32_le"
+            },
+            "5": {
+                "order": 2,
+                "name": "TnT =",
+                "type": "uint8",
+                "hideIfZero": true
+            },
+            "6-7": {
+                "order": 3,
+                "name": "Field =",
+                "type": "uint16_le",
+                "hideIfZero": true
+            }
+        }
+    },
+    "46b": {
+        "name": "Reply Get/Set data",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Index",
+                "type": "hex8"
+            },
+            "1-4": {
+                "order": 1,
+                "name": "Data",
+                "type": "hex32_le"
+            },
+            "5": {
+                "order": 2,
+                "name": "TnT =",
+                "type": "uint8",
+                "hideIfZero": true
+            },
+            "6-7": {
+                "order": 3,
+                "name": "Field =",
+                "type": "uint16_le",
+                "hideIfZero": true
+            }
+        }
+    },
     "2cf": {
         "name": "Reply Thermal State",
         "bytes": {
@@ -399,6 +838,245 @@
                 "scale": 0.01,
                 "precision": 2,
                 "unit": "%"
+            }
+        }
+    },
+    "2f8": {
+        "name": "Get System Config",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Request",
+                "type": "enum",
+                "values": {
+                    "01": "Get System ID",
+                    "02": "Get Nominal Input Voltage",
+                    "03": "Get Room Year",
+                    "04": "Get Room Date",
+                    "05": "Get Room Time (hh:mm)",
+                    "06": "Get Room Time (ss)",
+                    "07": "Get Tube ID",
+                    "08": "Get HV Cable Length"
+                }
+            }
+        }
+    },
+    "2f9": {
+        "name": "Reply System Config",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Reply",
+                "type": "enum",
+                "values": {
+                    "01": "System ID",
+                    "02": "Nominal Voltage",
+                    "03": "Room Year",
+                    "04": "Room Date",
+                    "05": "Room Time (hh:mm)",
+                    "06": "Room Time (ss)",
+                    "07": "Tube Type",
+                    "09": "Max Tube Spits"
+                }
+            },
+            "1-2": {
+                "order": 1,
+                "name": "Value =",
+                "type": "uint16_le"
+            }
+        }
+    },
+    "46e": {
+        "name": "Set Generator Mode",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Mode",
+                "type": "enum",
+                "values": {
+                    "00": "Select Application mode",
+                    "01": "Code Download",
+                    "02": "Database Download",
+                    "03": "Database Upload",
+                    "04": "End of DB download/upload",
+                    "05": "Uptime Test mode",
+                    "06": "Memory Download/Upload",
+                    "07": "Set-up Time",
+                    "08": "Clear/Reset NVRAM/FRAM",
+                    "09": "Uptime Calibration"
+                }
+            },
+            "1": {
+                "order": 1,
+                "name": "SubType",
+                "type": "enum",
+                "values": {
+                    "00": "ExpCtrl/GateCmd/ClearLog/AEC",
+                    "01": "Rotor DB",
+                    "02": "Heater DB",
+                    "03": "Tube DB",
+                    "04": "Jedi DB",
+                    "05": "Jedi EventLog/Djinn ErrLog",
+                    "06": "Tube TnT Data",
+                    "07": "Generator TnT Data",
+                    "08": "AEC Calibration Data",
+                    "09": "Jedi Backup/Djinn TnT Upload",
+                    "0a": "Chiller TnT Data",
+                    "0b": "Djinn ErrLog Mass Upload",
+                    "0c": "Mimic TnT Data/Ion Chamber Diag",
+                    "0d": "AEC Cable Diag",
+                    "0e": "Grid Pulsed Diag",
+                    "0f": "LVPS Diag",
+                    "10": "SC Voltage Diag",
+                    "11": "SC IGBT Diag",
+                    "14": "Djinn Diags",
+                    "18": "Auto kV/mA Gaia/NGI",
+                    "19": "New Diags Gaia/NGI+"
+                }
+            },
+            "2": {
+                "order": 2,
+                "name": "Param1",
+                "type": "hex8"
+            },
+            "3": {
+                "order": 3,
+                "name": "Param2",
+                "type": "hex8"
+            },
+            "4": {
+                "order": 4,
+                "name": "Param3",
+                "type": "hex8"
+            },
+            "5": {
+                "order": 5,
+                "name": "Param4",
+                "type": "hex8"
+            },
+            "6": {
+                "order": 6,
+                "name": "Param5",
+                "type": "hex8"
+            },
+            "7": {
+                "order": 7,
+                "name": "Param6",
+                "type": "hex8"
+            }
+        }
+    },
+    "46f": {
+        "name": "Reply Set Generator Mode",
+        "bytes": {
+            "0": {
+                "order": 0,
+                "name": "Status",
+                "type": "bitfield",
+                "fields": [
+                    {
+                        "name": "Mode",
+                        "startBit": 0,
+                        "endBit": 3,
+                        "type": "enum",
+                        "values": {
+                            "0": "App",
+                            "1": "CodeDL",
+                            "2": "DB_DL",
+                            "3": "DB_UL",
+                            "4": "EndDB",
+                            "5": "Test",
+                            "6": "MemDL",
+                            "7": "Time",
+                            "8": "Clear",
+                            "9": "Cal",
+                            "10": "AEC_Man"
+                        }
+                    },
+                    {
+                        "name": "Result",
+                        "startBit": 7,
+                        "endBit": 7,
+                        "type": "enum",
+                        "values": {
+                            "0": "Success",
+                            "1": "Failure"
+                        }
+                    }
+                ]
+            },
+            "1": {
+                "order": 1,
+                "name": "SubType",
+                "type": "enum",
+                "values": {
+                    "00": "AEC Cal / Specific Addr",
+                    "01": "Rotor / Filament Cal / Saved RAM",
+                    "02": "Heater / Flash",
+                    "03": "FPGA / RAM",
+                    "04": "DSP / DRAM",
+                    "05": "Aux Pkg / Jedi Log",
+                    "06": "AEC Diag",
+                    "07": "Vasc Tube Diag",
+                    "08": "Auto kV/mA Diag",
+                    "09": "FAN Check",
+                    "0a": "Grid Diag",
+                    "0b": "Bias Diag",
+                    "0c": "Ion Chamber Diag",
+                    "0d": "AEC Cable Diag",
+                    "0e": "Grid Pulsed Diag",
+                    "0f": "LVPS Diag",
+                    "10": "SC Voltage Diag",
+                    "11": "SC IGBT Diag",
+                    "14": "Djinn Diags"
+                }
+            },
+            "2": {
+                "order": 2,
+                "name": "State",
+                "type": "enum",
+                "values": {
+                    "00": "Running/Start/BEGIN",
+                    "01": "End/COMPUTE/END",
+                    "02": "ABORT",
+                    "03": "END"
+                }
+            },
+            "3": {
+                "order": 3,
+                "name": "Result/Param1",
+                "type": "hex8"
+            },
+            "4": {
+                "order": 4,
+                "name": "Param2",
+                "type": "hex8"
+            },
+            "5": {
+                "order": 5,
+                "name": "Status/Voltage",
+                "type": "enum",
+                "values": {
+                    "00": "Stop",
+                    "01": "Continue",
+                    "02": "Running",
+                    "03": "Wait RTL",
+                    "05": "Success",
+                    "06": "Failed",
+                    "07": "Stopped by user",
+                    "fe": "Not in diag",
+                    "ff": "Unsupported"
+                }
+            },
+            "6": {
+                "order": 6,
+                "name": "Data1",
+                "type": "hex8"
+            },
+            "7": {
+                "order": 7,
+                "name": "Data2",
+                "type": "hex8"
             }
         }
     },

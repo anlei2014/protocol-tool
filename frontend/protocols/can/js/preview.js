@@ -236,6 +236,19 @@ function parseCanData(canId, dataBytes) {
                 }
                 break;
 
+            case 'hex32_le':
+                if (relevantBytes.length >= 4) {
+                    value = parseInt(relevantBytes[0], 16) +
+                        (parseInt(relevantBytes[1], 16) << 8) +
+                        (parseInt(relevantBytes[2], 16) << 16) +
+                        (parseInt(relevantBytes[3], 16) << 24);
+                    displayValue = `0x${relevantBytes[3].toUpperCase()}${relevantBytes[2].toUpperCase()}${relevantBytes[1].toUpperCase()}${relevantBytes[0].toUpperCase()}`;
+                    if (fieldName && fieldName !== byteRange) {
+                        displayValue = `${fieldName}: ${displayValue}`;
+                    }
+                }
+                break;
+
             case 'bitfield':
                 // 位字段解析：解析单字节中的多个位字段
                 if (relevantBytes[0] && fieldConfig.fields) {
@@ -264,6 +277,20 @@ function parseCanData(canId, dataBytes) {
 
                     displayValue = fieldResults.join(' - ');
                     value = parseInt(relevantBytes[0], 16);
+                }
+                break;
+
+            case 'ascii':
+                // 将字节转换为ASCII字符串
+                if (relevantBytes.length > 0) {
+                    const asciiChars = relevantBytes
+                        .map(hex => parseInt(hex, 16))
+                        .filter(code => code >= 32 && code <= 126) // 只保留可打印字符
+                        .map(code => String.fromCharCode(code))
+                        .join('');
+                    if (asciiChars.length > 0) {
+                        displayValue = fieldName && fieldName !== byteRange ? `${fieldName}: "${asciiChars}"` : `"${asciiChars}"`;
+                    }
                 }
                 break;
 
