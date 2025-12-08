@@ -90,27 +90,41 @@ func (s *CSVService) ParseFile(filename string, protocol string) (*models.CSVDat
 
 	var headers []string
 	var rows [][]string
+	skippedRows := 0
+	lineNumber := 0
 
-	// 读取所有记录
-	records, err := reader.ReadAll()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CSV: %v", err)
+	// 逐行读取，跳过格式错误的行
+	for {
+		lineNumber++
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			// 跳过格式错误的行
+			fmt.Printf("Warning: Skipping line %d due to parse error: %v\n", lineNumber, err)
+			skippedRows++
+			continue
+		}
+
+		// 第一个有效行作为表头
+		if len(headers) == 0 {
+			headers = record
+		} else {
+			rows = append(rows, record)
+		}
 	}
 
-	if len(records) == 0 {
+	if skippedRows > 0 {
+		fmt.Printf("Info: Parsed CSV file with %d valid rows, skipped %d invalid rows\n", len(rows), skippedRows)
+	}
+
+	if len(headers) == 0 {
 		return &models.CSVData{
 			Headers: []string{},
 			Rows:    [][]string{},
 			Total:   0,
 		}, nil
-	}
-
-	// 第一行作为表头
-	headers = records[0]
-
-	// 其余行作为数据
-	if len(records) > 1 {
-		rows = records[1:]
 	}
 
 	// 根据协议进行特定的数据处理
@@ -183,7 +197,7 @@ func (s *CSVService) DeleteFile(filename string) error {
 	return os.Remove(filePath)
 }
 
-// validateCSV 验证CSV文件格式
+// validateCSV 验证CSV文件格式，跳过格式错误的行
 func (s *CSVService) validateCSV(filePath string) (rowCount, columnCount int, err error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -192,20 +206,39 @@ func (s *CSVService) validateCSV(filePath string) (rowCount, columnCount int, er
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1
+	reader.FieldsPerRecord = -1 // 允许不同行有不同数量的字段
 
-	records, err := reader.ReadAll()
-	if err != nil {
-		return 0, 0, err
+	var validRecords [][]string
+	skippedRows := 0
+	lineNumber := 0
+
+	// 逐行读取，跳过格式错误的行
+	for {
+		lineNumber++
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			// 跳过格式错误的行，不返回错误
+			fmt.Printf("Warning: Skipping line %d during validation: %v\n", lineNumber, err)
+			skippedRows++
+			continue
+		}
+		validRecords = append(validRecords, record)
 	}
 
-	if len(records) == 0 {
+	if skippedRows > 0 {
+		fmt.Printf("Info: Validated CSV file, skipped %d invalid rows\n", skippedRows)
+	}
+
+	if len(validRecords) == 0 {
 		return 0, 0, nil
 	}
 
 	// 计算列数（使用第一行的列数）
-	columnCount = len(records[0])
-	rowCount = len(records)
+	columnCount = len(validRecords[0])
+	rowCount = len(validRecords)
 
 	return rowCount, columnCount, nil
 }
