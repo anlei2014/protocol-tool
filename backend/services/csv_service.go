@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -188,6 +190,11 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 		files = append(files, file)
 	}
 
+	// 按上传时间降序排序，最近上传的文件显示在最上面
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].UploadTime.After(files[j].UploadTime)
+	})
+
 	return files, nil
 }
 
@@ -290,6 +297,30 @@ func (s *CSVService) loadCANDefinitions() (map[string]string, error) {
 	return definitions, nil
 }
 
+// isValidCANMessage 检查Buffer字段是否为有效的消息格式
+// 有效格式1: string=ID:Length:[HH HH HH ...] 例如: string=2cf:8:[10 40 ff 37 48 c1 0a 00]
+// 有效格式2: string=ushort=X 例如: string=ushort=0
+func isValidCANMessage(buffer string) bool {
+	// 检查是否以 "string=" 开头
+	if !strings.HasPrefix(buffer, "string=") {
+		return false
+	}
+
+	// CAN消息格式的正则表达式: string=ID:Length:[HH HH HH ...]
+	canMsgPattern := regexp.MustCompile(`^string=[0-9a-fA-F]{1,4}:\d{1,2}:\[[0-9a-fA-F ]*\]`)
+	if canMsgPattern.MatchString(buffer) {
+		return true
+	}
+
+	// ushort格式的正则表达式: string=ushort=X
+	ushortPattern := regexp.MustCompile(`^string=ushort=\d+`)
+	if ushortPattern.MatchString(buffer) {
+		return true
+	}
+
+	return false
+}
+
 // processCANData 处理CAN协议数据（FIXED格式）
 func (s *CSVService) processCANData(headers []string, rows [][]string) *models.CSVData {
 	// 加载CAN定义
@@ -315,7 +346,18 @@ func (s *CSVService) processCANData(headers []string, rows [][]string) *models.C
 	}
 
 	var canRows [][]string
+	filteredCount := 0
 	for _, row := range rows {
+		// 先检查Buffer字段是否为有效的CAN消息格式
+		if bufferIdx >= 0 && bufferIdx < len(row) {
+			buffer := row[bufferIdx]
+			if !isValidCANMessage(buffer) {
+				// 跳过不符合CAN消息格式的数据行
+				filteredCount++
+				continue
+			}
+		}
+
 		// 为每行添加CAN协议特定的信息
 		canRow := []string{
 			"CAN",                                // 协议类型
@@ -344,6 +386,10 @@ func (s *CSVService) processCANData(headers []string, rows [][]string) *models.C
 		}
 		canRow = append(canRow, meaning)
 		canRows = append(canRows, canRow)
+	}
+
+	if filteredCount > 0 {
+		fmt.Printf("Info: 过滤了 %d 行不符合CAN消息格式的数据\n", filteredCount)
 	}
 
 	return &models.CSVData{

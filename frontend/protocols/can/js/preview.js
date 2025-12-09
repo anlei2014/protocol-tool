@@ -510,9 +510,9 @@ function showPreview(data, filename, protocol = 'CAN') {
     }
 
 
-    // 统一列映射：Time, From->To, Id, Data, Description
-    const unifiedHeaders = ['Time', 'From->To', 'Id', 'Data', 'Description'];
-    const columnWidths = ['200px', '180px', '300px', '150px', 'auto']; // Time, From->To, Id, Data, Description
+    // 统一列映射：#, Time, From->To, Id, Data, Description
+    const unifiedHeaders = ['#', 'Time', 'From->To', 'Id', 'Data', 'Description'];
+    const columnWidths = ['50px', '200px', '180px', '300px', '150px', 'auto']; // #, Time, From->To, Id, Data, Description
     tableHead.innerHTML = `
         <tr>
             ${unifiedHeaders.map((h, index) => {
@@ -609,7 +609,7 @@ function showPreview(data, filename, protocol = 'CAN') {
     };
 
     // 生成统一视图数据
-    const maxRows = Math.min(data.rows.length, 100);
+    const maxRows = Math.min(data.rows.length, 300);
     unifiedRows = []; // 重置统一视图数据
     const idMeaningMap = new Map(); // 左侧唯一消息ID和Meaning的映射
     hiddenMessageIds.clear(); // 重置隐藏的消息ID集合
@@ -676,7 +676,7 @@ function showPreview(data, filename, protocol = 'CAN') {
                 }
             }
 
-            unifiedRows.push({ id: id, row: [time, fromTo, idColumnDisplay, dataField, descriptionField] });
+            unifiedRows.push({ id: id, lineNumber: i + 2, row: [time, fromTo, idColumnDisplay, dataField, descriptionField] });
 
             // 收集唯一ID和对应的Meaning
             if (id && id !== 'N/A') {
@@ -775,7 +775,7 @@ function renderTable(totalRows) {
 
     // 如果 unifiedRows 为空，不渲染
     if (!unifiedRows || unifiedRows.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">没有数据</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">没有数据</td></tr>';
         return;
     }
 
@@ -785,9 +785,9 @@ function renderTable(totalRows) {
     // 渲染表格数据
     let tableHTML = '';
     if (filteredRows.length === 0) {
-        tableHTML = `<tr><td colspan="5" style="text-align: center; color: #999;">没有数据</td></tr>`;
+        tableHTML = `<tr><td colspan="6" style="text-align: center; color: #999;">没有数据</td></tr>`;
     } else {
-        const columnWidths = ['200px', '180px', '300px', '200px', 'auto']; // Time, From->To, Id, Data, Description
+        const columnWidths = ['50px', '230px', '180px', '300px', '200px', 'auto']; // #, Time, From->To, Id, Data, Description
         tableHTML = filteredRows.map(item => {
             if (!item || !item.row) {
                 return '';
@@ -798,9 +798,12 @@ function renderTable(totalRows) {
             const rowStyle = highlightStyle ?
                 `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
 
+            // 构建带行号的行数据
+            const rowWithLineNumber = [item.lineNumber, ...item.row];
+
             return `
                 <tr style="${rowStyle}">
-                    ${item.row.map((cell, colIndex) => {
+                    ${rowWithLineNumber.map((cell, colIndex) => {
                 const width = columnWidths[colIndex] || 'auto';
                 const cellStyle = highlightStyle && highlightStyle.textColor ?
                     `width: ${width}; color: ${highlightStyle.textColor};` :
@@ -812,10 +815,10 @@ function renderTable(totalRows) {
         }).join('');
     }
 
-    // 若总数超过100，添加提示
-    if (totalRows > 100) {
+    // 若总数超过300，添加提示
+    if (totalRows > 300) {
         const hiddenCount = unifiedRows.length - filteredRows.length;
-        tableHTML += `<tr><td colspan="5" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
+        tableHTML += `<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">显示前300行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
     }
 
     // 一次性设置innerHTML

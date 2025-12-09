@@ -368,7 +368,7 @@ function showPreview(data, filename, protocol = 'CAN') {
     };
 
     // 生成统一视图数据
-    const maxRows = Math.min(data.rows.length, 100);
+    const maxRows = Math.min(data.rows.length, 300);
     unifiedRows = []; // 重置统一视图数据
     const idMeaningMap = new Map(); // 左侧唯一消息ID和Meaning的映射
     hiddenMessageIds.clear(); // 重置隐藏的消息ID集合
@@ -542,10 +542,10 @@ function renderTable(totalRows) {
         }).join('');
     }
 
-    // 若总数超过100，添加提示
-    if (totalRows > 100) {
+    // 若总数超过300，添加提示
+    if (totalRows > 300) {
         const hiddenCount = unifiedRows.length - filteredRows.length;
-        tableHTML += `<tr><td colspan="4" style="text-align: center; font-style: italic; color: #666;">显示前100行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
+        tableHTML += `<tr><td colspan="4" style="text-align: center; font-style: italic; color: #666;">显示前300行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
     }
 
     // 一次性设置innerHTML
