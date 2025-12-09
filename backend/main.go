@@ -3,7 +3,7 @@ package main
 import (
 	"csv-parser/handlers"
 	"csv-parser/services"
-	"log"
+	"csv-parser/utils"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -11,9 +11,15 @@ import (
 )
 
 func main() {
+	// 初始化日志系统
+	if err := utils.InitLogger("../log"); err != nil {
+		panic("Failed to initialize logger: " + err.Error())
+	}
+	defer utils.Close()
+
 	// 创建上传目录
 	if err := os.MkdirAll("../uploads", 0755); err != nil {
-		log.Fatal("Failed to create uploads directory:", err)
+		utils.Fatal("Failed to create uploads directory: %v", err)
 	}
 
 	// 初始化服务
@@ -77,8 +83,8 @@ func main() {
 	})
 
 	// 启动服务器
-	log.Println("Server starting on :8080")
+	utils.Info("Server starting on :8080")
 	if err := r.Run(":8080"); err != nil {
-		log.Fatal("Failed to start server:", err)
+		utils.Fatal("Failed to start server: %v", err)
 	}
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"csv-parser/models"
 	"csv-parser/services"
+	"csv-parser/utils"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -22,9 +23,11 @@ func NewCSVHandler(csvService *services.CSVService) *CSVHandler {
 
 // UploadFile 处理文件上传
 func (h *CSVHandler) UploadFile(c *gin.Context) {
+	utils.Info("开始处理文件上传请求")
 	// 获取上传的文件
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
+		utils.Error("获取上传文件失败: %v", err)
 		c.JSON(http.StatusBadRequest, models.UploadResponse{
 			Success: false,
 			Message: "Failed to get uploaded file: " + err.Error(),
@@ -35,8 +38,10 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 
 	// 验证文件类型
 	filename := header.Filename
+	utils.Info("正在上传文件: %s", filename)
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != ".csv" {
+		utils.Warn("文件类型不允许: %s", ext)
 		c.JSON(http.StatusBadRequest, models.UploadResponse{
 			Success: false,
 			Message: "Only CSV files are allowed",
@@ -47,6 +52,7 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 	// 上传文件
 	csvFile, err := h.csvService.UploadFile(filename, file)
 	if err != nil {
+		utils.Error("上传文件失败: %v", err)
 		c.JSON(http.StatusInternalServerError, models.UploadResponse{
 			Success: false,
 			Message: "Failed to upload file: " + err.Error(),
@@ -54,6 +60,7 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
+	utils.Info("文件上传成功: %s", filename)
 	c.JSON(http.StatusOK, models.UploadResponse{
 		Success: true,
 		Message: "File uploaded successfully",
@@ -65,9 +72,11 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 func (h *CSVHandler) ParseFile(c *gin.Context) {
 	filename := c.Param("filename")
 	protocol := c.DefaultQuery("protocol", "CAN") // 默认使用CAN协议
+	utils.Info("开始解析文件: %s, 协议: %s", filename, protocol)
 
 	// 验证文件名
 	if filename == "" {
+		utils.Warn("解析请求缺少文件名")
 		c.JSON(http.StatusBadRequest, models.ParseResponse{
 			Success: false,
 			Message: "Filename is required",
@@ -84,9 +93,26 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
-	// 解析文件
-	data, err := h.csvService.ParseFile(filename, protocol)
+	// 创建以CSV文件名命名的日志文件
+	protocolType := utils.GetProtocolType(protocol)
+	logKey, err := utils.CreateFileLogger(filename, protocolType)
 	if err != nil {
+		utils.Warn("创建日志文件失败: %v，将继续解析但不记录详细日志", err)
+		logKey = ""
+	}
+	defer func() {
+		if logKey != "" {
+			utils.CloseFileLogger(logKey)
+		}
+	}()
+
+	// 解析文件（带日志记录）
+	data, err := h.csvService.ParseFileWithLog(filename, protocol, logKey)
+	if err != nil {
+		if logKey != "" {
+			utils.FileLogError(logKey, "解析文件失败: %v", err)
+		}
+		utils.Error("解析文件失败 %s: %v", filename, err)
 		c.JSON(http.StatusInternalServerError, models.ParseResponse{
 			Success: false,
 			Message: "Failed to parse file: " + err.Error(),
@@ -94,6 +120,10 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
+	if logKey != "" {
+		utils.FileLogInfo(logKey, "文件解析完成，返回 %d 条数据", data.Total)
+	}
+	utils.Info("文件解析成功: %s, 协议: %s", filename, protocol)
 	c.JSON(http.StatusOK, models.ParseResponse{
 		Success: true,
 		Message: "File parsed successfully with " + protocol + " protocol",
@@ -103,8 +133,10 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 
 // GetFiles 获取文件列表
 func (h *CSVHandler) GetFiles(c *gin.Context) {
+	utils.Debug("获取文件列表请求")
 	files, err := h.csvService.GetFiles()
 	if err != nil {
+		utils.Error("获取文件列表失败: %v", err)
 		c.JSON(http.StatusInternalServerError, models.FileListResponse{
 			Success: false,
 			Message: "Failed to get files: " + err.Error(),
@@ -112,6 +144,7 @@ func (h *CSVHandler) GetFiles(c *gin.Context) {
 		return
 	}
 
+	utils.Debug("成功获取文件列表, 共 %d 个文件", len(files))
 	c.JSON(http.StatusOK, models.FileListResponse{
 		Success: true,
 		Message: "Files retrieved successfully",
@@ -122,8 +155,10 @@ func (h *CSVHandler) GetFiles(c *gin.Context) {
 // DeleteFile 删除文件
 func (h *CSVHandler) DeleteFile(c *gin.Context) {
 	filename := c.Param("filename")
+	utils.Info("请求删除文件: %s", filename)
 
 	if filename == "" {
+		utils.Warn("删除请求缺少文件名")
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": "Filename is required",
@@ -133,6 +168,7 @@ func (h *CSVHandler) DeleteFile(c *gin.Context) {
 
 	err := h.csvService.DeleteFile(filename)
 	if err != nil {
+		utils.Error("删除文件失败 %s: %v", filename, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Failed to delete file: " + err.Error(),
@@ -140,6 +176,7 @@ func (h *CSVHandler) DeleteFile(c *gin.Context) {
 		return
 	}
 
+	utils.Info("文件删除成功: %s", filename)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "File deleted successfully",

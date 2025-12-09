@@ -6,6 +6,7 @@ let nameDefinitions = {}; // Name字段到Id描述的映射
 let rowHighlightConfig = { highlights: [] }; // 行高亮配置
 let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
 let dataParserConfig = {}; // CAN数据解析配置
+let timeSortOrder = 'asc'; // 时间排序状态: 'none', 'asc', 'desc'，默认升序
 
 // 加载CAN定义
 async function loadCanDefinitions() {
@@ -513,10 +514,30 @@ function showPreview(data, filename, protocol = 'CAN') {
     // 统一列映射：#, Time, From->To, Id, Data, Description
     const unifiedHeaders = ['#', 'Time', 'From->To', 'Id', 'Data', 'Description'];
     const columnWidths = ['50px', '200px', '180px', '300px', '150px', 'auto']; // #, Time, From->To, Id, Data, Description
+
+    // 获取排序图标
+    const getSortIcon = () => {
+        if (timeSortOrder === 'asc') return '<i class="bi bi-sort-up"></i>';
+        if (timeSortOrder === 'desc') return '<i class="bi bi-sort-down"></i>';
+        return '<i class="bi bi-arrow-down-up"></i>';
+    };
+
     tableHead.innerHTML = `
         <tr>
             ${unifiedHeaders.map((h, index) => {
         const width = columnWidths[index];
+        // 为Time列添加排序按钮
+        if (h === 'Time') {
+            return `<th style="width: ${width}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span>${h}</span>
+                    <button class="btn btn-sm btn-link p-0 ms-1 text-white" onclick="toggleTimeSort()" title="按时间排序">
+                        ${getSortIcon()}
+                    </button>
+                </div>
+                <div class="resize-handle"></div>
+            </th>`;
+        }
         return `<th style="width: ${width}">${h}<div class="resize-handle"></div></th>`;
     }).join('')}
         </tr>
@@ -769,7 +790,7 @@ function showPreview(data, filename, protocol = 'CAN') {
     });
 }
 
-// 渲染表格（带过滤）
+// 渲染表格（带过滤和排序）
 function renderTable(totalRows) {
     const tableBody = document.getElementById('tableBody');
 
@@ -780,7 +801,20 @@ function renderTable(totalRows) {
     }
 
     // 过滤数据
-    const filteredRows = unifiedRows.filter(item => !hiddenMessageIds.has(item.id));
+    let filteredRows = unifiedRows.filter(item => !hiddenMessageIds.has(item.id));
+
+    // 根据时间排序
+    if (timeSortOrder !== 'none' && filteredRows.length > 0) {
+        filteredRows = [...filteredRows].sort((a, b) => {
+            // Time 在 row 数组的第一个位置（index 0）
+            const timeA = a.row[0] || '';
+            const timeB = b.row[0] || '';
+
+            // 比较时间字符串
+            const comparison = timeA.localeCompare(timeB);
+            return timeSortOrder === 'asc' ? comparison : -comparison;
+        });
+    }
 
     // 渲染表格数据
     let tableHTML = '';
@@ -788,7 +822,7 @@ function renderTable(totalRows) {
         tableHTML = `<tr><td colspan="6" style="text-align: center; color: #999;">没有数据</td></tr>`;
     } else {
         const columnWidths = ['50px', '230px', '180px', '300px', '200px', 'auto']; // #, Time, From->To, Id, Data, Description
-        tableHTML = filteredRows.map(item => {
+        tableHTML = filteredRows.map((item, displayIndex) => {
             if (!item || !item.row) {
                 return '';
             }
@@ -798,8 +832,8 @@ function renderTable(totalRows) {
             const rowStyle = highlightStyle ?
                 `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
 
-            // 构建带行号的行数据
-            const rowWithLineNumber = [item.lineNumber, ...item.row];
+            // 构建带行号的行数据（使用显示顺序索引，从1开始）
+            const rowWithLineNumber = [displayIndex + 1, ...item.row];
 
             return `
                 <tr style="${rowStyle}">
@@ -823,6 +857,52 @@ function renderTable(totalRows) {
 
     // 一次性设置innerHTML
     tableBody.innerHTML = tableHTML;
+}
+
+// 切换时间排序
+function toggleTimeSort() {
+    // 循环切换排序状态: none -> asc -> desc -> none
+    if (timeSortOrder === 'none') {
+        timeSortOrder = 'asc';
+    } else if (timeSortOrder === 'asc') {
+        timeSortOrder = 'desc';
+    } else {
+        timeSortOrder = 'none';
+    }
+
+    // 更新表头排序图标
+    updateTimeSortIcon();
+
+    // 重新渲染表格
+    renderTable(unifiedRows.length);
+}
+
+// 更新时间排序图标
+function updateTimeSortIcon() {
+    const tableHead = document.getElementById('tableHead');
+    if (!tableHead) return;
+
+    // 找到Time列的排序按钮
+    const timeHeader = tableHead.querySelector('th:nth-child(2)'); // Time是第二列
+    if (!timeHeader) return;
+
+    const sortBtn = timeHeader.querySelector('button');
+    if (!sortBtn) return;
+
+    // 更新图标
+    let icon = '<i class="bi bi-arrow-down-up"></i>';
+    if (timeSortOrder === 'asc') {
+        icon = '<i class="bi bi-sort-up"></i>';
+    } else if (timeSortOrder === 'desc') {
+        icon = '<i class="bi bi-sort-down"></i>';
+    }
+    sortBtn.innerHTML = icon;
+
+    // 更新提示文本
+    const sortText = timeSortOrder === 'none' ? '按时间排序' :
+        timeSortOrder === 'asc' ? '时间升序 (点击切换降序)' :
+            '时间降序 (点击取消排序)';
+    sortBtn.title = sortText;
 }
 
 // 切换消息过滤（支持逗号分隔的多个ID）
