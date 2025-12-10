@@ -11,6 +11,7 @@ type CSVFile struct {
 	UploadTime   time.Time `json:"uploadTime"`
 	RowCount     int       `json:"rowCount"`
 	ColumnCount  int       `json:"columnCount"`
+	ProtocolType string    `json:"protocolType"` // 协议类型: CAN 或 CANOPEN
 }
 
 // CSVData 表示解析后的CSV数据
@@ -32,6 +33,7 @@ type ParseResponse struct {
 	Success bool     `json:"success"`
 	Message string   `json:"message"`
 	Data    *CSVData `json:"data,omitempty"`
+	Cached  bool     `json:"cached"` // 是否来自缓存
 }
 
 // FileListResponse 文件列表响应

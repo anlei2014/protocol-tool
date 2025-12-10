@@ -29,12 +29,12 @@ func NewCSVService(uploadDir string) *CSVService {
 }
 
 // UploadFile 处理文件上传
-func (s *CSVService) UploadFile(filename string, file io.Reader) (*models.CSVFile, error) {
-	// 生成唯一文件名，格式：UUID_原始文件名
+func (s *CSVService) UploadFile(filename string, file io.Reader, protocolType string) (*models.CSVFile, error) {
+	// 生成唯一文件名，格式：UUID_PROTOCOL_原始文件名
 	id := uuid.New().String()
 	ext := filepath.Ext(filename)
 	baseName := strings.TrimSuffix(filename, ext)
-	newFilename := id + "_" + baseName + ext
+	newFilename := id + "_" + protocolType + "_" + baseName + ext
 	filePath := filepath.Join(s.uploadDir, newFilename)
 
 	// 创建目标文件
@@ -67,6 +67,7 @@ func (s *CSVService) UploadFile(filename string, file io.Reader) (*models.CSVFil
 		UploadTime:   time.Now(),
 		RowCount:     rowCount,
 		ColumnCount:  columnCount,
+		ProtocolType: protocolType,
 	}
 
 	return csvFile, nil
@@ -233,13 +234,21 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 			continue // 跳过无效文件
 		}
 
-		// 提取原始文件名（去掉UUID前缀）
+		// 解析文件名: UUID_PROTOCOL_原始文件名.csv 或 UUID_原始文件名.csv（旧格式）
 		originalName := entry.Name()
-		if idx := strings.Index(entry.Name(), "_"); idx > 0 {
-			// 格式：UUID_原始文件名.csv
-			originalName = entry.Name()[idx+1:]
+		protocolType := "" // 默认空，表示旧格式文件
+
+		// 按 "_" 分割文件名
+		parts := strings.SplitN(entry.Name(), "_", 3)
+		if len(parts) >= 3 {
+			// 新格式：UUID_PROTOCOL_原始文件名.csv
+			protocolType = parts[1]
+			originalName = parts[2]
+		} else if len(parts) == 2 {
+			// 旧格式：UUID_原始文件名.csv
+			originalName = parts[1]
 		} else {
-			// 旧格式：UUID.csv，显示为"未知文件"
+			// 未知格式
 			originalName = "未知文件"
 		}
 
@@ -251,6 +260,7 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 			UploadTime:   info.ModTime(),
 			RowCount:     rowCount,
 			ColumnCount:  columnCount,
+			ProtocolType: protocolType,
 		}
 
 		files = append(files, file)
@@ -264,10 +274,94 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 	return files, nil
 }
 
-// DeleteFile 删除文件
+// DeleteFile 删除文件及其缓存
 func (s *CSVService) DeleteFile(filename string) error {
 	filePath := filepath.Join(s.uploadDir, filename)
+
+	// 删除所有相关的缓存文件
+	s.DeleteCacheForFile(filename)
+
 	return os.Remove(filePath)
+}
+
+// getCacheDir 获取缓存目录路径
+func (s *CSVService) getCacheDir() string {
+	return filepath.Join(s.uploadDir, "cache")
+}
+
+// getCachePath 获取指定文件和协议的缓存路径
+func (s *CSVService) getCachePath(filename, protocol string) string {
+	// 使用文件名（不含扩展名）+ 协议作为缓存文件名
+	baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
+	return filepath.Join(s.getCacheDir(), baseName+"_"+protocol+".cache.json")
+}
+
+// GetCachedResult 检查并读取缓存的解析结果
+func (s *CSVService) GetCachedResult(filename, protocol string) (*models.CSVData, bool) {
+	cachePath := s.getCachePath(filename, protocol)
+
+	// 检查缓存文件是否存在
+	if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+		return nil, false
+	}
+
+	// 读取缓存文件
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		utils.Warn("读取缓存文件失败: %v", err)
+		return nil, false
+	}
+
+	// 解析JSON
+	var csvData models.CSVData
+	if err := json.Unmarshal(data, &csvData); err != nil {
+		utils.Warn("解析缓存数据失败: %v", err)
+		return nil, false
+	}
+
+	utils.Info("成功读取缓存: %s", cachePath)
+	return &csvData, true
+}
+
+// SaveCacheResult 保存解析结果到缓存
+func (s *CSVService) SaveCacheResult(filename, protocol string, data *models.CSVData) error {
+	cacheDir := s.getCacheDir()
+
+	// 确保缓存目录存在
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		return fmt.Errorf("创建缓存目录失败: %v", err)
+	}
+
+	cachePath := s.getCachePath(filename, protocol)
+
+	// 序列化为JSON
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("序列化缓存数据失败: %v", err)
+	}
+
+	// 写入文件
+	if err := os.WriteFile(cachePath, jsonData, 0644); err != nil {
+		return fmt.Errorf("写入缓存文件失败: %v", err)
+	}
+
+	utils.Info("成功保存缓存: %s", cachePath)
+	return nil
+}
+
+// DeleteCacheForFile 删除指定文件的所有缓存
+func (s *CSVService) DeleteCacheForFile(filename string) {
+	cacheDir := s.getCacheDir()
+	baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	// 删除所有协议的缓存
+	protocols := []string{"CAN", "CANOPEN", "COMMON"}
+	for _, protocol := range protocols {
+		cachePath := filepath.Join(cacheDir, baseName+"_"+protocol+".cache.json")
+		if err := os.Remove(cachePath); err == nil {
+			utils.Info("已删除缓存文件: %s", cachePath)
+		}
+	}
 }
 
 // validateCSV 验证CSV文件格式，跳过格式错误的行

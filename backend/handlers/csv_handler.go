@@ -24,6 +24,14 @@ func NewCSVHandler(csvService *services.CSVService) *CSVHandler {
 // UploadFile 处理文件上传
 func (h *CSVHandler) UploadFile(c *gin.Context) {
 	utils.Info("开始处理文件上传请求")
+
+	// 获取协议类型参数
+	protocolType := c.DefaultPostForm("protocolType", "CAN")
+	if protocolType != "CAN" && protocolType != "CANOPEN" && protocolType != "COMMON" {
+		protocolType = "CAN" // 默认使用CAN协议
+	}
+	utils.Info("协议类型: %s", protocolType)
+
 	// 获取上传的文件
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -49,8 +57,8 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// 上传文件
-	csvFile, err := h.csvService.UploadFile(filename, file)
+	// 上传文件（带协议类型）
+	csvFile, err := h.csvService.UploadFile(filename, file, protocolType)
 	if err != nil {
 		utils.Error("上传文件失败: %v", err)
 		c.JSON(http.StatusInternalServerError, models.UploadResponse{
@@ -60,7 +68,7 @@ func (h *CSVHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	utils.Info("文件上传成功: %s", filename)
+	utils.Info("文件上传成功: %s, 协议类型: %s", filename, protocolType)
 	c.JSON(http.StatusOK, models.UploadResponse{
 		Success: true,
 		Message: "File uploaded successfully",
@@ -85,15 +93,27 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 	}
 
 	// 验证协议
-	if protocol != "CAN" && protocol != "CANOPEN" {
+	if protocol != "CAN" && protocol != "CANOPEN" && protocol != "COMMON" {
 		c.JSON(http.StatusBadRequest, models.ParseResponse{
 			Success: false,
-			Message: "Invalid protocol. Must be 'CAN' or 'CANOPEN'",
+			Message: "Invalid protocol. Must be 'CAN', 'CANOPEN' or 'COMMON'",
 		})
 		return
 	}
 
-	// 创建以CSV文件名命名的日志文件
+	// 1. 先检查缓存
+	if cachedData, hasCached := h.csvService.GetCachedResult(filename, protocol); hasCached {
+		utils.Info("从缓存读取解析结果: %s, 协议: %s", filename, protocol)
+		c.JSON(http.StatusOK, models.ParseResponse{
+			Success: true,
+			Message: "File loaded from cache",
+			Data:    cachedData,
+			Cached:  true,
+		})
+		return
+	}
+
+	// 2. 无缓存，创建以CSV文件名命名的日志文件
 	protocolType := utils.GetProtocolType(protocol)
 	logKey, err := utils.CreateFileLogger(filename, protocolType)
 	if err != nil {
@@ -106,7 +126,7 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		}
 	}()
 
-	// 解析文件（带日志记录）
+	// 3. 解析文件（带日志记录）
 	data, err := h.csvService.ParseFileWithLog(filename, protocol, logKey)
 	if err != nil {
 		if logKey != "" {
@@ -120,6 +140,11 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		return
 	}
 
+	// 4. 保存解析结果到缓存
+	if err := h.csvService.SaveCacheResult(filename, protocol, data); err != nil {
+		utils.Warn("保存缓存失败: %v", err)
+	}
+
 	if logKey != "" {
 		utils.FileLogInfo(logKey, "文件解析完成，返回 %d 条数据", data.Total)
 	}
@@ -128,6 +153,7 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		Success: true,
 		Message: "File parsed successfully with " + protocol + " protocol",
 		Data:    data,
+		Cached:  false,
 	})
 }
 

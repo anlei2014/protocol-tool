@@ -11,6 +11,38 @@
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .protocol-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .protocol-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .protocol-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .protocol-card.selected .protocol-icon {
+            color: #667eea;
+        }
+
+        .upload-area.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .protocol-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
 </head>
 
 <body>
@@ -22,70 +54,83 @@
         </header>
 
         <main class="row g-4">
-            <!-- 文件上传区域 -->
+            <!-- 协议选择与文件上传区域（合并） -->
             <div class="col-12">
                 <div class="card shadow-lg">
-                    <div class="card-body p-4">
-                        <div class="row g-4">
-                            <!-- 左侧：使用说明 -->
-                            <div class="col-lg-4">
-                                <div class="h-100 p-4 rounded-3"
-                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                    <h5 class="text-white mb-4">
-                                        <i class="bi bi-book me-2"></i>使用说明
-                                    </h5>
-                                    <div class="d-flex mb-4">
-                                        <div class="flex-shrink-0">
-                                            <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center"
-                                                style="width: 36px; height: 36px; font-weight: bold;">1</div>
-                                        </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <h6 class="text-white mb-1">选择CSV文件</h6>
-                                            <p class="text-white-50 small mb-0">拖拽或点击右侧区域上传需要解析的CSV文件</p>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex">
-                                        <div class="flex-shrink-0">
-                                            <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center"
-                                                style="width: 36px; height: 36px; font-weight: bold;">2</div>
-                                        </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <h6 class="text-white mb-1">选择解析协议</h6>
-                                            <p class="text-white-50 small mb-0">
-                                                在已上传文件列表中选择对应协议：<br>
-                                                <span class="badge bg-primary mt-1">FixedRAD → CAN解析</span><br>
-                                                <span class="badge bg-info mt-1">Mobiled → CANOPEN解析</span>
-                                            </p>
-                                        </div>
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>选择协议并上传文件
+                            <span class="badge bg-secondary ms-2" id="selectedProtocolBadge"
+                                style="display: none;"></span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 协议选择卡片 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card protocol-card h-100" id="protocolCAN" onclick="selectProtocol('CAN')">
+                                    <div class="card-body text-center py-3">
+                                        <i class="bi bi-cpu protocol-icon display-5 text-primary mb-2"></i>
+                                        <h6 class="card-title mb-1">CAN 协议</h6>
+                                        <p class="card-text text-muted small mb-0">FixedRAD 格式</p>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- 右侧：拖拽上传区域 -->
-                            <div class="col-lg-8">
-                                <div class="upload-area border border-3 border-dashed rounded-3 p-5 text-center h-100 d-flex align-items-center justify-content-center"
-                                    id="uploadArea">
-                                    <div class="upload-content">
-                                        <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
-                                        <h4 class="mb-3">拖拽CSV文件到此处或点击选择文件</h4>
-                                        <p class="text-muted mb-4">支持.csv格式文件</p>
-                                        <input type="file" id="fileInput" accept=".csv" class="d-none">
-                                        <button class="btn btn-primary btn-lg"
-                                            onclick="document.getElementById('fileInput').click()">
-                                            <i class="bi bi-folder2-open me-2"></i>选择文件
-                                        </button>
+                            <div class="col-md-4">
+                                <div class="card protocol-card h-100" id="protocolCANOPEN"
+                                    onclick="selectProtocol('CANOPEN')">
+                                    <div class="card-body text-center py-3">
+                                        <i class="bi bi-diagram-3 protocol-icon display-5 text-info mb-2"></i>
+                                        <h6 class="card-title mb-1">CANOPEN 协议</h6>
+                                        <p class="card-text text-muted small mb-0">Mobiled 格式</p>
                                     </div>
-                                </div>
-
-                                <!-- 上传进度 -->
-                                <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
-                                    <div class="progress mb-2" style="height: 8px;">
-                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                            id="progressFill" role="progressbar" style="width: 0%"></div>
-                                    </div>
-                                    <p class="text-center mb-0" id="progressText">上传中...</p>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="card protocol-card h-100" id="protocolCOMMON"
+                                    onclick="selectProtocol('COMMON')">
+                                    <div class="card-body text-center py-3">
+                                        <i
+                                            class="bi bi-file-earmark-text protocol-icon display-5 text-success mb-2"></i>
+                                        <h6 class="card-title mb-1">COMMON 协议</h6>
+                                        <p class="card-text text-muted small mb-0">通用 CSV 格式</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 分割线 -->
+                        <hr class="my-3">
+
+                        <!-- 上传区域 -->
+                        <div class="upload-area border border-3 border-dashed rounded-3 p-4 text-center d-flex align-items-center justify-content-center disabled"
+                            id="uploadArea" style="min-height: 150px;">
+                            <div class="upload-content">
+                                <i class="bi bi-cloud-upload display-3 text-muted mb-2"></i>
+                                <h5 class="mb-2" id="uploadTitle">请先选择协议类型</h5>
+                                <p class="text-muted mb-3 small" id="uploadSubtitle">选择上方协议后才能上传CSV文件</p>
+                                <input type="file" id="fileInput" accept=".csv" class="d-none">
+                                <button class="btn btn-primary" id="selectFileBtn" disabled
+                                    onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-folder2-open me-2"></i>选择文件
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 协议提示 -->
+                        <div class="text-center mt-3">
+                            <small class="text-muted" id="protocolHint">
+                                <i class="bi bi-info-circle me-1"></i>请先选择协议类型，然后上传文件
+                            </small>
+                        </div>
+
+                        <!-- 上传进度 -->
+                        <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
+                            <div class="progress mb-2" style="height: 8px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressFill"
+                                    role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mb-0" id="progressText">上传中...</p>
                         </div>
                     </div>
                 </div>
@@ -97,6 +142,8 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-files me-2"></i>已上传文件
+                            <span class="badge bg-primary ms-2" id="fileListProtocolBadge"
+                                style="display: none;"></span>
                         </h5>
                         <button class="btn btn-outline-success btn-sm" onclick="loadFiles()">
                             <i class="bi bi-arrow-clockwise me-1"></i>刷新
@@ -104,11 +151,10 @@
                     </div>
                     <div class="card-body">
                         <div class="files-list" id="filesList">
-                            <div class="text-center py-4">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">加载中...</span>
-                                </div>
-                                <p class="mt-2 text-muted">加载中...</p>
+                            <div class="empty-state text-center py-4">
+                                <i class="bi bi-hand-index display-1 text-muted"></i>
+                                <h5 class="mt-3 text-muted">请先选择协议类型</h5>
+                                <p class="text-muted">选择协议后将显示对应的文件列表</p>
                             </div>
                         </div>
                     </div>

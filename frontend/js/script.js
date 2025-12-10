@@ -1,11 +1,93 @@
 // 全局变量
 let currentFiles = [];
+let selectedProtocol = null; // 当前选择的协议类型
+
+// 获取协议对应的 badge 样式类
+function getProtocolBadgeClass(protocol) {
+    switch (protocol) {
+        case 'CAN': return 'bg-primary';
+        case 'CANOPEN': return 'bg-info';
+        case 'COMMON': return 'bg-success';
+        default: return 'bg-secondary';
+    }
+}
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function () {
     initializeUpload();
-    loadFiles();
+    // 不自动加载文件列表，需要先选择协议
+    updateUIForProtocolSelection();
 });
+
+// 选择协议类型
+function selectProtocol(protocol) {
+    selectedProtocol = protocol;
+
+    // 更新协议卡片选中状态
+    document.querySelectorAll('.protocol-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    const selectedCard = document.getElementById('protocol' + protocol);
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
+    }
+
+    // 更新UI状态
+    updateUIForProtocolSelection();
+
+    // 加载对应协议的文件列表
+    loadFiles();
+}
+
+// 更新UI状态（根据是否选择了协议）
+function updateUIForProtocolSelection() {
+    const uploadArea = document.getElementById('uploadArea');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+    const uploadTitle = document.getElementById('uploadTitle');
+    const uploadSubtitle = document.getElementById('uploadSubtitle');
+    const protocolHint = document.getElementById('protocolHint');
+    const selectedProtocolBadge = document.getElementById('selectedProtocolBadge');
+    const fileListProtocolBadge = document.getElementById('fileListProtocolBadge');
+    const filesList = document.getElementById('filesList');
+
+    if (selectedProtocol) {
+        // 已选择协议 - 启用上传
+        uploadArea.classList.remove('disabled');
+        selectFileBtn.disabled = false;
+        uploadTitle.textContent = '拖拽文件到此处或点击选择';
+        uploadSubtitle.textContent = '支持 .csv 格式文件';
+        protocolHint.innerHTML = `<i class="bi bi-check-circle-fill text-success me-1"></i>已选择 ${selectedProtocol} 协议`;
+
+        // 显示协议 badge
+        selectedProtocolBadge.textContent = selectedProtocol;
+        selectedProtocolBadge.style.display = 'inline';
+        selectedProtocolBadge.className = 'badge ms-2 ' + getProtocolBadgeClass(selectedProtocol);
+
+        fileListProtocolBadge.textContent = selectedProtocol;
+        fileListProtocolBadge.style.display = 'inline';
+        fileListProtocolBadge.className = 'badge ms-2 ' + getProtocolBadgeClass(selectedProtocol);
+    } else {
+        // 未选择协议 - 禁用上传
+        uploadArea.classList.add('disabled');
+        selectFileBtn.disabled = true;
+        uploadTitle.textContent = '请先选择协议类型';
+        uploadSubtitle.textContent = '选择协议后才能上传CSV文件';
+        protocolHint.innerHTML = '<i class="bi bi-info-circle me-1"></i>请先选择协议类型，然后才能上传文件';
+
+        // 隐藏协议 badge
+        selectedProtocolBadge.style.display = 'none';
+        fileListProtocolBadge.style.display = 'none';
+
+        // 显示提示
+        filesList.innerHTML = `
+            <div class="empty-state text-center py-4">
+                <i class="bi bi-hand-index display-1 text-muted"></i>
+                <h5 class="mt-3 text-muted">请先选择协议类型</h5>
+                <p class="text-muted">选择协议后将显示对应的文件列表</p>
+            </div>
+        `;
+    }
+}
 
 // 初始化上传功能
 function initializeUpload() {
@@ -16,6 +98,11 @@ function initializeUpload() {
     uploadArea.addEventListener('click', (e) => {
         // 如果点击的是按钮，不触发文件选择
         if (e.target.classList.contains('btn')) {
+            return;
+        }
+        // 检查是否已选择协议
+        if (!selectedProtocol) {
+            showMessage('请先选择协议类型', 'warning');
             return;
         }
         fileInput.click();
@@ -31,7 +118,9 @@ function initializeUpload() {
     // 拖拽功能
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
-        uploadArea.classList.add('dragover');
+        if (selectedProtocol) {
+            uploadArea.classList.add('dragover');
+        }
     });
 
     uploadArea.addEventListener('dragleave', () => {
@@ -42,6 +131,11 @@ function initializeUpload() {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
 
+        if (!selectedProtocol) {
+            showMessage('请先选择协议类型', 'warning');
+            return;
+        }
+
         const files = e.dataTransfer.files;
         if (files.length > 0) {
             uploadFile(files[0]);
@@ -51,6 +145,12 @@ function initializeUpload() {
 
 // 上传文件
 async function uploadFile(file) {
+    // 检查是否选择了协议
+    if (!selectedProtocol) {
+        showMessage('请先选择协议类型', 'warning');
+        return;
+    }
+
     // 验证文件类型
     if (!file.name.toLowerCase().endsWith('.csv')) {
         showMessage('请选择CSV文件', 'error');
@@ -62,6 +162,7 @@ async function uploadFile(file) {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('protocolType', selectedProtocol); // 添加协议类型
 
     try {
         const response = await fetch('/api/upload', {
@@ -72,8 +173,9 @@ async function uploadFile(file) {
         const result = await response.json();
 
         if (result.success) {
-            showMessage('文件上传成功', 'success');
-            loadFiles(); // 刷新文件列表
+            showMessage(`文件上传成功，正在跳转到解析页面...`, 'success');
+            // 自动跳转到解析页面
+            parseFile(result.file.filename, selectedProtocol);
         } else {
             showMessage('上传失败: ' + result.message, 'error');
         }
@@ -186,24 +288,54 @@ async function loadFiles() {
 function renderFilesList() {
     const filesList = document.getElementById('filesList');
 
-    if (currentFiles.length === 0) {
+    // 如果未选择协议，显示提示
+    if (!selectedProtocol) {
         filesList.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-folder-x display-1 text-muted"></i>
-                <h5 class="mt-3 text-muted">暂无上传的文件</h5>
-                <p class="text-muted">请先上传CSV文件</p>
+            <div class="empty-state text-center py-4">
+                <i class="bi bi-hand-index display-1 text-muted"></i>
+                <h5 class="mt-3 text-muted">请先选择协议类型</h5>
+                <p class="text-muted">选择协议后将显示对应的文件列表</p>
             </div>
         `;
         return;
     }
 
-    filesList.innerHTML = currentFiles.map(file => `
+    // 按协议类型过滤文件
+    const filteredFiles = currentFiles.filter(file => {
+        // 如果文件有协议类型，则匹配
+        if (file.protocolType) {
+            return file.protocolType === selectedProtocol;
+        }
+        // 旧格式文件（无协议类型）显示在所有列表中
+        return true;
+    });
+
+    if (filteredFiles.length === 0) {
+        filesList.innerHTML = `
+            <div class="empty-state text-center py-4">
+                <i class="bi bi-folder-x display-1 text-muted"></i>
+                <h5 class="mt-3 text-muted">暂无 ${selectedProtocol} 协议的文件</h5>
+                <p class="text-muted">请上传 ${selectedProtocol} 格式的CSV文件</p>
+            </div>
+        `;
+        return;
+    }
+
+    filesList.innerHTML = filteredFiles.map(file => {
+        // 判断是否为旧格式文件（无协议类型）
+        const isLegacyFile = !file.protocolType;
+        const protocolBadge = isLegacyFile
+            ? '<span class="badge bg-secondary ms-2">兼容模式</span>'
+            : `<span class="badge ${getProtocolBadgeClass(file.protocolType)} ms-2">${file.protocolType}</span>`;
+
+        return `
         <div class="card mb-3 file-item">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h6 class="card-title mb-2">
-                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>${file.originalName}
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>${escapeHtml(file.originalName)}
+                            ${protocolBadge}
                         </h6>
                         <p class="card-text text-muted small mb-0">
                             <i class="bi bi-hdd me-1"></i>大小: ${formatFileSize(file.size)} | 
@@ -214,11 +346,8 @@ function renderFilesList() {
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group">
-                            <button class="btn btn-primary btn-sm" onclick="parseFile('${file.filename}', 'CAN')">
-                                <i class="bi bi-tools me-1"></i>CAN解析
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="parseFile('${file.filename}', 'CANOPEN')">
-                                <i class="bi bi-laptop me-1"></i>CANOPEN解析
+                            <button class="btn btn-primary btn-sm" onclick="parseFile('${file.filename}', '${selectedProtocol}')">
+                                <i class="bi bi-tools me-1"></i>${selectedProtocol}解析
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.filename}')">
                                 <i class="bi bi-trash me-1"></i>删除
@@ -228,8 +357,9 @@ function renderFilesList() {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
+
 
 // 解析文件 - 跳转到协议专用预览页面
 function parseFile(filename, protocol = 'CAN') {
