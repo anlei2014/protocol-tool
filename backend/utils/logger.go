@@ -70,10 +70,15 @@ func (m *LogManager) init() error {
 		}
 	}
 
-	// 创建通用日志记录器
-	commonDir := filepath.Join(m.baseDir, string(ProtocolCommon))
+	// 创建系统日志目录（独立于协议目录）
+	systemDir := filepath.Join(m.baseDir, "system")
+	if err := os.MkdirAll(systemDir, 0755); err != nil {
+		return fmt.Errorf("failed to create system log directory: %v", err)
+	}
+
+	// 创建通用日志记录器（放在 system 目录下）
 	startTime := time.Now().Format("2006-01-02_15-04-05")
-	commonLogger, err := m.createLogger(commonDir, fmt.Sprintf("system_%s.log", startTime))
+	commonLogger, err := m.createLogger(systemDir, fmt.Sprintf("system_%s.log", startTime))
 	if err != nil {
 		return err
 	}
