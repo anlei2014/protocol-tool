@@ -7,11 +7,44 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 PID_FILE="$ROOT_DIR/.protocol-tool.pid"
+BINARY_NAME="csv-parser"
+
+# 函数：杀死进程及其子进程
+kill_process_tree() {
+    local pid=$1
+    # 先获取所有子进程
+    local children=$(pgrep -P "$pid" 2>/dev/null)
+    for child in $children; do
+        kill_process_tree "$child"
+    done
+    # 杀死当前进程
+    kill "$pid" 2>/dev/null
+}
 
 # 检查 PID 文件是否存在
 if [ ! -f "$PID_FILE" ]; then
-    echo "未找到运行中的服务 (PID 文件不存在)"
-    echo "服务可能未启动或已被手动停止"
+    echo "未找到 PID 文件，尝试按进程名查找..."
+    # 尝试按进程名查找并杀死
+    PIDS=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
+    if [ -n "$PIDS" ]; then
+        echo "找到相关进程: $PIDS"
+        for pid in $PIDS; do
+            echo "正在停止进程 $pid..."
+            kill "$pid" 2>/dev/null
+        done
+        sleep 1
+        # 检查是否还有残留进程
+        REMAINING=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
+        if [ -n "$REMAINING" ]; then
+            echo "强制终止残留进程..."
+            for pid in $REMAINING; do
+                kill -9 "$pid" 2>/dev/null
+            done
+        fi
+        echo "✓ 服务已停止"
+    else
+        echo "未找到运行中的服务"
+    fi
     exit 0
 fi
 
@@ -21,14 +54,22 @@ PID=$(cat "$PID_FILE")
 # 检查进程是否存在
 if ! ps -p "$PID" > /dev/null 2>&1; then
     echo "服务进程 (PID: $PID) 已不存在"
+    # 同时检查是否有按进程名运行的实例
+    PIDS=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
+    if [ -n "$PIDS" ]; then
+        echo "但发现其他相关进程: $PIDS，正在停止..."
+        for pid in $PIDS; do
+            kill "$pid" 2>/dev/null
+        done
+    fi
     rm -f "$PID_FILE"
     exit 0
 fi
 
 echo "正在停止 Protocol Tool 服务 (PID: $PID)..."
 
-# 发送 SIGTERM 信号优雅关闭
-kill "$PID" 2>/dev/null
+# 发送 SIGTERM 信号优雅关闭（包括子进程）
+kill_process_tree "$PID"
 
 # 等待进程结束（最多等待 10 秒）
 for i in {1..10}; do
@@ -43,6 +84,10 @@ done
 # 如果优雅关闭失败，强制终止
 echo "进程未响应，正在强制终止..."
 kill -9 "$PID" 2>/dev/null
+
+# 同时强制杀死可能残留的相关进程
+pkill -9 -f "$BINARY_NAME" 2>/dev/null
+
 sleep 1
 
 if ! ps -p "$PID" > /dev/null 2>&1; then
@@ -50,5 +95,6 @@ if ! ps -p "$PID" > /dev/null 2>&1; then
     rm -f "$PID_FILE"
 else
     echo "✗ 无法停止服务，请手动处理 (PID: $PID)"
+    echo "  尝试: kill -9 $PID"
     exit 1
 fi

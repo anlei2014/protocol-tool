@@ -7,8 +7,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 BACKEND_DIR="$ROOT_DIR/backend"
+BUILD_DIR="$ROOT_DIR/build"
 PID_FILE="$ROOT_DIR/.protocol-tool.pid"
 LOG_FILE="$ROOT_DIR/log/server.log"
+BINARY_NAME="csv-parser"
 
 # 检查是否已经在运行
 if [ -f "$PID_FILE" ]; then
@@ -23,10 +25,11 @@ if [ -f "$PID_FILE" ]; then
     fi
 fi
 
-# 确保日志目录存在
+# 确保日志目录和构建目录存在
 mkdir -p "$ROOT_DIR/log"
+mkdir -p "$BUILD_DIR"
 
-# 切换到 backend 目录
+# 切换到 backend 目录进行编译
 cd "$BACKEND_DIR" || {
     echo "错误: 无法进入 backend 目录: $BACKEND_DIR"
     exit 1
@@ -35,10 +38,25 @@ cd "$BACKEND_DIR" || {
 echo "正在启动 Protocol Tool 服务..."
 echo "项目根目录: $ROOT_DIR"
 
-# 在后台运行 go run main.go，输出重定向到日志文件
-nohup go run main.go > "$LOG_FILE" 2>&1 &
+# 编译 Go 程序到 build 目录
+echo "正在编译..."
+go build -o "$BUILD_DIR/$BINARY_NAME" . || {
+    echo "错误: 编译失败"
+    exit 1
+}
 
-# 保存 PID
+echo "编译完成: $BUILD_DIR/$BINARY_NAME"
+
+# 切换到 build 目录运行（确保工作目录正确）
+cd "$BUILD_DIR" || {
+    echo "错误: 无法进入 build 目录: $BUILD_DIR"
+    exit 1
+}
+
+# 在后台运行编译后的二进制文件，输出重定向到日志文件
+nohup ./"$BINARY_NAME" > "$LOG_FILE" 2>&1 &
+
+# 保存 PID（这次是实际程序的 PID，不是 go run 的 PID）
 PID=$!
 echo $PID > "$PID_FILE"
 
