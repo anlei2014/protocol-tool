@@ -1,0 +1,108 @@
+{
+    "columns": [
+        {
+            "name": "Type",
+            "index": 0,
+            "required": true,
+            "matchType": "exact",
+            "validValues": [
+                "publish",
+                "receive",
+                "receive_request"
+            ],
+            "description": "消息类型，必须匹配 validValues 中的值之一"
+        },
+        {
+            "name": "Source",
+            "index": 1,
+            "required": false,
+            "matchType": "any",
+            "validValues": [],
+            "description": "消息来源，不做限制"
+        },
+        {
+            "name": "Target",
+            "index": 2,
+            "required": false,
+            "matchType": "any",
+            "validValues": [],
+            "description": "消息目标，不做限制"
+        },
+        {
+            "name": "Name",
+            "index": 3,
+            "required": false,
+            "matchType": "any",
+            "validValues": [],
+            "description": "消息名称，不做限制"
+        },
+        {
+            "name": "Time",
+            "index": 4,
+            "required": true,
+            "matchType": "regex",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}",
+            "description": "时间戳，必须符合日期时间格式"
+        },
+        {
+            "name": "Buffer",
+            "index": 5,
+            "required": true,
+            "matchType": "regex",
+            "patterns": [
+                {
+                    "name": "CAN_MESSAGE",
+                    "pattern": "^string=[0-9a-fA-F]{1,4}:\\d{1,2}:\\[[0-9a-fA-F ]*\\]",
+                    "description": "标准CAN消息: string=ID:Length:[HH HH ...]"
+                },
+                {
+                    "name": "USHORT_VALUE",
+                    "pattern": "^string=ushort=\\d+",
+                    "description": "ushort值: string=ushort=X"
+                },
+                {
+                    "name": "STRUCT_VALUE",
+                    "pattern": "^\\{.*\\}$",
+                    "description": "结构体值: {field=value;...}"
+                }
+            ],
+            "description": "数据缓冲区，必须匹配 patterns 中任一模式"
+        }
+    ],
+    "minColumnCount": 6,
+    "_matchTypes": {
+        "exact": "精确匹配 validValues 中的值（不区分大小写）",
+        "regex": "正则表达式匹配，单个 pattern 或多个 patterns",
+        "contains": "包含 validValues 中任一值",
+        "any": "不做限制，任何值都有效"
+    },
+    "_usage": {
+        "columns": "定义CSV的每一列及其验证规则",
+        "name": "列名，用于日志和错误提示",
+        "index": "列的索引位置（0-based）",
+        "required": "是否必须验证此列。false表示跳过验证",
+        "matchType": "匹配类型: exact/regex/contains/any",
+        "validValues": "当matchType为exact或contains时，有效值列表",
+        "pattern": "当matchType为regex时，单个正则表达式",
+        "patterns": "当matchType为regex时，多个正则表达式（匹配任一即可）"
+    },
+    "_examples": [
+        {
+            "说明": "有效行示例",
+            "数据": "publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 17:03:48.853.257,string=2cf:8:[11 80 f2 aa 47 c8 16 00]",
+            "验证结果": {
+                "Type": "publish 匹配 validValues",
+                "Source": "跳过验证 (matchType=any)",
+                "Target": "跳过验证 (matchType=any)",
+                "Name": "跳过验证 (matchType=any)",
+                "Time": "匹配日期时间格式",
+                "Buffer": "匹配 CAN_MESSAGE 模式"
+            }
+        },
+        {
+            "说明": "无效行示例",
+            "数据": "{}",
+            "验证结果": "列数不足6列，直接过滤"
+        }
+    ]
+}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"csv-parser/models"
 	"csv-parser/utils"
 	"encoding/csv"
@@ -108,9 +109,13 @@ func (s *CSVService) ParseFileWithLog(filename string, protocol string, logKey s
 		utils.FileLogInfo(logKey, "文件大小: %d 字节", fileInfo.Size())
 	}
 
-	// 创建CSV读取器
-	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1 // 允许不同行有不同数量的字段
+	// 使用bufio.Scanner逐行读取，对每行独立解析CSV
+	// 这样格式错误的行不会影响后续有效行的解析
+	scanner := bufio.NewScanner(file)
+	// 设置更大的缓冲区以处理较长的行
+	const maxScanTokenSize = 1024 * 1024 // 1MB
+	buf := make([]byte, maxScanTokenSize)
+	scanner.Buffer(buf, maxScanTokenSize)
 
 	var headers []string
 	var rows [][]string
@@ -118,20 +123,33 @@ func (s *CSVService) ParseFileWithLog(filename string, protocol string, logKey s
 	lineNumber := 0
 
 	if logKey != "" {
-		utils.FileLogInfo(logKey, "开始逐行读取CSV数据...")
+		utils.FileLogInfo(logKey, "开始逐行读取CSV数据（增强容错模式）...")
 	}
 
-	// 逐行读取，跳过格式错误的行
-	for {
+	// 逐行读取，每行独立解析
+	for scanner.Scan() {
 		lineNumber++
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			// 跳过格式错误的行
+		line := scanner.Text()
+
+		// 跳过空行
+		if strings.TrimSpace(line) == "" {
 			if logKey != "" {
-				utils.FileLogWarn(logKey, "第 %d 行解析错误，已跳过: %v", lineNumber, err)
+				utils.FileLogDebug(logKey, "第 %d 行为空行，已跳过", lineNumber)
+			}
+			skippedRows++
+			continue
+		}
+
+		// 对每一行独立创建CSV reader进行解析
+		lineReader := csv.NewReader(strings.NewReader(line))
+		lineReader.FieldsPerRecord = -1 // 允许不同数量的字段
+		lineReader.LazyQuotes = true    // 更宽松的引号处理
+
+		record, err := lineReader.Read()
+		if err != nil {
+			// 跳过格式错误的行，但不影响后续行
+			if logKey != "" {
+				utils.FileLogWarn(logKey, "第 %d 行解析错误，已跳过: %v (内容: %.100s...)", lineNumber, err, line)
 			}
 			skippedRows++
 			continue
@@ -148,8 +166,15 @@ func (s *CSVService) ParseFileWithLog(filename string, protocol string, logKey s
 		}
 	}
 
+	// 检查Scanner错误
+	if err := scanner.Err(); err != nil {
+		if logKey != "" {
+			utils.FileLogError(logKey, "读取文件时发生错误: %v", err)
+		}
+	}
+
 	if logKey != "" {
-		utils.FileLogInfo(logKey, "CSV读取完成: 总行数=%d, 有效数据行=%d, 跳过行数=%d", lineNumber-1, len(rows), skippedRows)
+		utils.FileLogInfo(logKey, "CSV读取完成: 总行数=%d, 有效数据行=%d, 跳过行数=%d", lineNumber, len(rows), skippedRows)
 	}
 
 	if len(headers) == 0 {
@@ -253,20 +278,33 @@ func (s *CSVService) validateCSV(filePath string) (rowCount, columnCount int, er
 	}
 	defer file.Close()
 
-	reader := csv.NewReader(file)
-	reader.FieldsPerRecord = -1 // 允许不同行有不同数量的字段
+	// 使用bufio.Scanner逐行读取，对每行独立解析CSV
+	scanner := bufio.NewScanner(file)
+	const maxScanTokenSize = 1024 * 1024 // 1MB
+	buf := make([]byte, maxScanTokenSize)
+	scanner.Buffer(buf, maxScanTokenSize)
 
 	var validRecords [][]string
 	skippedRows := 0
 	lineNumber := 0
 
-	// 逐行读取，跳过格式错误的行
-	for {
+	// 逐行读取，每行独立解析
+	for scanner.Scan() {
 		lineNumber++
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
+		line := scanner.Text()
+
+		// 跳过空行
+		if strings.TrimSpace(line) == "" {
+			skippedRows++
+			continue
 		}
+
+		// 对每一行独立创建CSV reader进行解析
+		lineReader := csv.NewReader(strings.NewReader(line))
+		lineReader.FieldsPerRecord = -1 // 允许不同数量的字段
+		lineReader.LazyQuotes = true    // 更宽松的引号处理
+
+		record, err := lineReader.Read()
 		if err != nil {
 			// 跳过格式错误的行，不返回错误
 			utils.Warn("Skipping line %d during validation: %v", lineNumber, err)
@@ -274,6 +312,11 @@ func (s *CSVService) validateCSV(filePath string) (rowCount, columnCount int, er
 			continue
 		}
 		validRecords = append(validRecords, record)
+	}
+
+	// 检查Scanner错误
+	if err := scanner.Err(); err != nil {
+		utils.Warn("Error reading file during validation: %v", err)
 	}
 
 	if skippedRows > 0 {
@@ -313,6 +356,165 @@ func (s *CSVService) processDataByProtocolWithLog(headers []string, rows [][]str
 			Rows:    rows,
 		}
 	}
+}
+
+// ColumnPattern 表示列的正则匹配模式
+type ColumnPattern struct {
+	Name        string `json:"name"`
+	Pattern     string `json:"pattern"`
+	Description string `json:"description"`
+}
+
+// ColumnConfig 列配置
+type ColumnConfig struct {
+	Name        string          `json:"name"`
+	Index       int             `json:"index"`
+	Required    bool            `json:"required"`
+	MatchType   string          `json:"matchType"` // exact, regex, contains, any
+	ValidValues []string        `json:"validValues,omitempty"`
+	Pattern     string          `json:"pattern,omitempty"`
+	Patterns    []ColumnPattern `json:"patterns,omitempty"`
+	Description string          `json:"description"`
+}
+
+// RowFilterConfig 行过滤配置
+type RowFilterConfig struct {
+	Columns        []ColumnConfig `json:"columns"`
+	MinColumnCount int            `json:"minColumnCount"`
+}
+
+// loadRowFilterConfig 加载行过滤配置
+func (s *CSVService) loadRowFilterConfig() (*RowFilterConfig, error) {
+	configPath := filepath.Join("config", "can", "row_filter.json")
+	file, err := os.ReadFile(configPath)
+	if err != nil {
+		// 配置文件不存在时使用默认配置
+		return &RowFilterConfig{
+			MinColumnCount: 6,
+			Columns: []ColumnConfig{
+				{Name: "Type", Index: 0, Required: true, MatchType: "exact", ValidValues: []string{"publish", "receive", "receive_request"}},
+				{Name: "Source", Index: 1, Required: false, MatchType: "any"},
+				{Name: "Target", Index: 2, Required: false, MatchType: "any"},
+				{Name: "Name", Index: 3, Required: false, MatchType: "any"},
+				{Name: "Time", Index: 4, Required: true, MatchType: "regex", Pattern: `^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}`},
+				{Name: "Buffer", Index: 5, Required: true, MatchType: "regex", Patterns: []ColumnPattern{
+					{Name: "CAN_MESSAGE", Pattern: `^string=[0-9a-fA-F]{1,4}:\d{1,2}:\[[0-9a-fA-F ]*\]`},
+					{Name: "USHORT_VALUE", Pattern: `^string=ushort=\d+`},
+					{Name: "STRUCT_VALUE", Pattern: `^\{.*\}$`},
+				}},
+			},
+		}, nil
+	}
+
+	var config RowFilterConfig
+	if err := json.Unmarshal(file, &config); err != nil {
+		return nil, fmt.Errorf("解析row_filter.json失败: %v", err)
+	}
+
+	return &config, nil
+}
+
+// isValidRow 根据配置检查行是否有效
+func (s *CSVService) isValidRow(row []string, config *RowFilterConfig, headers []string, logKey string, rowIdx int) bool {
+	// 检查列数
+	if len(row) < config.MinColumnCount {
+		if logKey != "" {
+			utils.FileLogDebug(logKey, "第 %d 行列数不足（期望至少 %d 列，实际 %d 列），已过滤", rowIdx+1, config.MinColumnCount, len(row))
+		}
+		return false
+	}
+
+	// 遍历每个配置的列进行验证
+	for _, col := range config.Columns {
+		// 跳过不需要验证的列
+		if !col.Required {
+			continue
+		}
+
+		// 检查索引是否有效
+		if col.Index < 0 || col.Index >= len(row) {
+			if logKey != "" {
+				utils.FileLogDebug(logKey, "第 %d 行 %s 列索引无效（索引=%d，行长度=%d），已过滤", rowIdx+1, col.Name, col.Index, len(row))
+			}
+			return false
+		}
+
+		value := row[col.Index]
+
+		// 根据匹配类型进行验证
+		switch col.MatchType {
+		case "exact":
+			// 精确匹配（不区分大小写）
+			isValid := false
+			valueLower := strings.ToLower(strings.TrimSpace(value))
+			for _, validValue := range col.ValidValues {
+				if valueLower == strings.ToLower(validValue) {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				if logKey != "" {
+					utils.FileLogDebug(logKey, "第 %d 行 %s 列值无效（值='%s'，有效值=%v），已过滤", rowIdx+1, col.Name, value, col.ValidValues)
+				}
+				return false
+			}
+
+		case "regex":
+			isValid := false
+			// 如果有多个patterns，匹配任一即可
+			if len(col.Patterns) > 0 {
+				for _, p := range col.Patterns {
+					re, err := regexp.Compile(p.Pattern)
+					if err != nil {
+						continue
+					}
+					if re.MatchString(value) {
+						isValid = true
+						break
+					}
+				}
+			} else if col.Pattern != "" {
+				// 单个pattern
+				re, err := regexp.Compile(col.Pattern)
+				if err == nil && re.MatchString(value) {
+					isValid = true
+				}
+			} else {
+				// 没有配置pattern，视为有效
+				isValid = true
+			}
+			if !isValid {
+				if logKey != "" {
+					utils.FileLogDebug(logKey, "第 %d 行 %s 列格式无效（值='%s'），已过滤", rowIdx+1, col.Name, value)
+				}
+				return false
+			}
+
+		case "contains":
+			// 包含匹配
+			isValid := false
+			valueLower := strings.ToLower(value)
+			for _, validValue := range col.ValidValues {
+				if strings.Contains(valueLower, strings.ToLower(validValue)) {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				if logKey != "" {
+					utils.FileLogDebug(logKey, "第 %d 行 %s 列不包含有效值（值='%s'，需包含=%v），已过滤", rowIdx+1, col.Name, value, col.ValidValues)
+				}
+				return false
+			}
+
+		case "any":
+			// 不做限制
+			continue
+		}
+	}
+
+	return true
 }
 
 // CANDefinition 表示一个CAN消息定义
@@ -381,6 +583,16 @@ func (s *CSVService) processCANDataWithLog(headers []string, rows [][]string, lo
 		utils.FileLogInfo(logKey, "===== 开始CAN协议数据处理 =====")
 	}
 
+	// 加载行过滤配置
+	filterConfig, err := s.loadRowFilterConfig()
+	if err != nil {
+		if logKey != "" {
+			utils.FileLogWarn(logKey, "加载行过滤配置失败: %v，将使用默认配置", err)
+		}
+	} else if logKey != "" {
+		utils.FileLogInfo(logKey, "成功加载行过滤配置: 共 %d 列规则, minColumnCount=%d", len(filterConfig.Columns), filterConfig.MinColumnCount)
+	}
+
 	// 加载CAN定义
 	canDefinitions, err := s.loadCANDefinitions()
 	if err != nil {
@@ -423,17 +635,10 @@ func (s *CSVService) processCANDataWithLog(headers []string, rows [][]string, lo
 	matchedMeanings := make(map[string]int) // 统计匹配到的消息类型
 
 	for rowIdx, row := range rows {
-		// 先检查Buffer字段是否为有效的CAN消息格式
-		if bufferIdx >= 0 && bufferIdx < len(row) {
-			buffer := row[bufferIdx]
-			if !isValidCANMessage(buffer) {
-				// 跳过不符合CAN消息格式的数据行
-				filteredCount++
-				if logKey != "" && filteredCount <= 5 {
-					utils.FileLogDebug(logKey, "第 %d 行不符合CAN消息格式，已过滤: %s", rowIdx+1, buffer)
-				}
-				continue
-			}
+		// 使用配置驱动的行过滤
+		if !s.isValidRow(row, filterConfig, headers, logKey, rowIdx) {
+			filteredCount++
+			continue
 		}
 
 		// 为每行添加CAN协议特定的信息
