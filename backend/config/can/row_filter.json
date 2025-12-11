@@ -15,18 +15,24 @@
         {
             "name": "Source",
             "index": 1,
-            "required": false,
-            "matchType": "any",
-            "validValues": [],
-            "description": "消息来源，不做限制"
+            "required": true,
+            "matchType": "exact",
+            "validValues": [
+                "XRTechMgr",
+                "N/A"
+            ],
+            "description": "消息来源，必须匹配 XRTechMgr 或 N/A"
         },
         {
             "name": "Target",
             "index": 2,
-            "required": false,
-            "matchType": "any",
-            "validValues": [],
-            "description": "消息目标，不做限制"
+            "required": true,
+            "matchType": "exact",
+            "validValues": [
+                "XRTechMgr",
+                "N/A"
+            ],
+            "description": "消息目标，必须匹配 XRTechMgr 或 N/A"
         },
         {
             "name": "Name",

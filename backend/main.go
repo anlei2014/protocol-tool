@@ -41,9 +41,9 @@ func main() {
 	r.Static("/uploads", "../uploads")
 
 	// 协议专用配置路由 (后端配置)
-	r.Static("/config/can", "./config/can")
-	r.Static("/config/canopen", "./config/canopen")
-	r.Static("/config/common", "./config/common")
+	r.Static("/config/can", "../backend/config/can")
+	r.Static("/config/canopen", "../backend/config/canopen")
+	r.Static("/config/common", "../backend/config/common")
 
 	// 协议专用前端静态资源路由
 	r.Static("/protocols/can", "../frontend/protocols/can")

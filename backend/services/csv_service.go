@@ -479,7 +479,7 @@ type RowFilterConfig struct {
 
 // loadRowFilterConfig 加载行过滤配置
 func (s *CSVService) loadRowFilterConfig() (*RowFilterConfig, error) {
-	configPath := filepath.Join("config", "can", "row_filter.json")
+	configPath := filepath.Join("..", "backend", "config", "can", "row_filter.json")
 	file, err := os.ReadFile(configPath)
 	if err != nil {
 		// 配置文件不存在时使用默认配置
@@ -620,7 +620,7 @@ type CANDefinition struct {
 
 // loadCANDefinitions 加载CAN ID定义
 func (s *CSVService) loadCANDefinitions() (map[string]string, error) {
-	configPath := filepath.Join("config", "can_definitions.json")
+	configPath := filepath.Join("..", "backend", "config", "can", "definitions.json")
 	file, err := os.ReadFile(configPath)
 	if err != nil {
 		// 如果配置文件不存在,返回空map

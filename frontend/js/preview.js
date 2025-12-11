@@ -9,7 +9,7 @@ let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
 // 加载CAN定义
 async function loadCanDefinitions() {
     try {
-        const response = await fetch('/config/can_definitions.json');
+        const response = await fetch('/config/can/definitions.json');
         if (response.ok) {
             canDefinitions = await response.json();
         } else {
@@ -25,7 +25,7 @@ async function loadCanDefinitions() {
 // 加载Name定义
 async function loadNameDefinitions() {
     try {
-        const response = await fetch('/config/name_definitions.json');
+        const response = await fetch('/config/can/name_definitions.json');
         if (response.ok) {
             nameDefinitions = await response.json();
         } else {
@@ -41,7 +41,7 @@ async function loadNameDefinitions() {
 // 加载行高亮配置
 async function loadRowHighlightConfig() {
     try {
-        const response = await fetch('/config/row_highlight_config.json');
+        const response = await fetch('/config/can/row_highlight.json');
         if (response.ok) {
             rowHighlightConfig = await response.json();
         } else {
@@ -57,7 +57,7 @@ async function loadRowHighlightConfig() {
 // 加载From->To映射配置
 async function loadFromToMapping() {
     try {
-        const response = await fetch('/config/from_to_mapping.json');
+        const response = await fetch('/config/can/from_to_mapping.json');
         if (response.ok) {
             fromToMapping = await response.json();
         } else {
@@ -145,7 +145,7 @@ let tableStyleConfig = {
 // 加载表格样式配置
 async function loadTableStyleConfig() {
     try {
-        const response = await fetch('/static/config/table_style_config.json');
+        const response = await fetch('/protocols/can/config/table_style_config.json');
         if (response.ok) {
             tableStyleConfig = await response.json();
             applyTableStyles();
