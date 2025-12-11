@@ -11,11 +11,25 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+// 预编译的正则表达式（避免每次调用都重新编译）
+var (
+	// CAN消息格式: string=ID:Length:[HH HH HH ...]
+	canMsgPattern = regexp.MustCompile(`^string=[0-9a-fA-F]{1,4}:\d{1,2}:\[[0-9a-fA-F ]*\]`)
+	// ushort格式: string=ushort=X
+	ushortPattern = regexp.MustCompile(`^string=ushort=\d+`)
+	// 时间格式
+	timePattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}`)
+	// 结构体格式
+	structPattern = regexp.MustCompile(`^\{.*\}$`)
 )
 
 type CSVService struct {
@@ -651,14 +665,11 @@ func isValidCANMessage(buffer string) bool {
 		return false
 	}
 
-	// CAN消息格式的正则表达式: string=ID:Length:[HH HH HH ...]
-	canMsgPattern := regexp.MustCompile(`^string=[0-9a-fA-F]{1,4}:\d{1,2}:\[[0-9a-fA-F ]*\]`)
+	// 使用预编译的正则表达式
 	if canMsgPattern.MatchString(buffer) {
 		return true
 	}
 
-	// ushort格式的正则表达式: string=ushort=X
-	ushortPattern := regexp.MustCompile(`^string=ushort=\d+`)
 	if ushortPattern.MatchString(buffer) {
 		return true
 	}
@@ -724,46 +735,123 @@ func (s *CSVService) processCANDataWithLog(headers []string, rows [][]string, lo
 		}
 	}
 
-	var canRows [][]string
-	filteredCount := 0
-	matchedMeanings := make(map[string]int) // 统计匹配到的消息类型
+	// 并行处理配置
+	numWorkers := runtime.NumCPU()
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+	rowCount := len(rows)
 
-	for rowIdx, row := range rows {
-		// 使用配置驱动的行过滤
-		if !s.isValidRow(row, filterConfig, headers, logKey, rowIdx) {
-			filteredCount++
-			continue
+	// 如果数据量较小，使用单线程处理
+	if rowCount < 1000 {
+		numWorkers = 1
+	}
+
+	if logKey != "" {
+		utils.FileLogInfo(logKey, "使用 %d 个并行工作线程处理 %d 行数据", numWorkers, rowCount)
+	}
+
+	// 用于存储处理结果的结构
+	type processedRow struct {
+		index   int
+		row     []string
+		meaning string
+		valid   bool
+	}
+
+	// 创建结果通道
+	results := make(chan processedRow, rowCount)
+	var wg sync.WaitGroup
+
+	// 计算每个worker处理的行数范围
+	chunkSize := (rowCount + numWorkers - 1) / numWorkers
+
+	// 启动并行处理
+	for w := 0; w < numWorkers; w++ {
+		startIdx := w * chunkSize
+		endIdx := startIdx + chunkSize
+		if endIdx > rowCount {
+			endIdx = rowCount
+		}
+		if startIdx >= rowCount {
+			break
 		}
 
-		// 为每行添加CAN协议特定的信息
-		canRow := []string{
-			"CAN",                                // 协议类型
-			"0x" + fmt.Sprintf("%03X", len(row)), // 消息ID（基于数据长度）
-			fmt.Sprintf("%d", len(row)),          // 数据长度
-		}
-		canRow = append(canRow, row...)
+		wg.Add(1)
+		go func(start, end int) {
+			defer wg.Done()
+			for rowIdx := start; rowIdx < end; rowIdx++ {
+				row := rows[rowIdx]
 
-		// 尝试从Buffer字段解析ID并查找Meaning
-		meaning := ""
-		if bufferIdx >= 0 && bufferIdx < len(row) {
-			buffer := row[bufferIdx]
-			// 解析Buffer: 形如string=2cf:8:[10 40 ff 37 48 c1 0a 00]
-			if strings.Contains(buffer, "string=") {
-				// 提取ID部分
-				parts := strings.Split(buffer, ":")
-				if len(parts) >= 1 {
-					idPart := strings.TrimPrefix(parts[0], "string=")
-					idPart = strings.TrimSpace(idPart)
-					// 查找定义
-					if def, exists := canDefinitions[strings.ToLower(idPart)]; exists {
-						meaning = def
-						matchedMeanings[def]++
+				// 使用配置驱动的行过滤（注意：日志在并发时可能会乱序，所以禁用）
+				if !s.isValidRow(row, filterConfig, headers, "", rowIdx) {
+					results <- processedRow{index: rowIdx, valid: false}
+					continue
+				}
+
+				// 为每行添加CAN协议特定的信息
+				canRow := []string{
+					"CAN",                                // 协议类型
+					"0x" + fmt.Sprintf("%03X", len(row)), // 消息ID（基于数据长度）
+					fmt.Sprintf("%d", len(row)),          // 数据长度
+				}
+				canRow = append(canRow, row...)
+
+				// 尝试从Buffer字段解析ID并查找Meaning
+				meaning := ""
+				if bufferIdx >= 0 && bufferIdx < len(row) {
+					buffer := row[bufferIdx]
+					// 解析Buffer: 形如string=2cf:8:[10 40 ff 37 48 c1 0a 00]
+					if strings.Contains(buffer, "string=") {
+						// 提取ID部分
+						parts := strings.Split(buffer, ":")
+						if len(parts) >= 1 {
+							idPart := strings.TrimPrefix(parts[0], "string=")
+							idPart = strings.TrimSpace(idPart)
+							// 查找定义
+							if def, exists := canDefinitions[strings.ToLower(idPart)]; exists {
+								meaning = def
+							}
+						}
 					}
 				}
+				canRow = append(canRow, meaning)
+				results <- processedRow{index: rowIdx, row: canRow, meaning: meaning, valid: true}
 			}
+		}(startIdx, endIdx)
+	}
+
+	// 等待所有worker完成，然后关闭结果通道
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// 收集结果并按原始顺序排序
+	tempResults := make([]processedRow, 0, rowCount)
+	for r := range results {
+		tempResults = append(tempResults, r)
+	}
+
+	// 按原始索引排序，保持顺序
+	sort.Slice(tempResults, func(i, j int) bool {
+		return tempResults[i].index < tempResults[j].index
+	})
+
+	// 构建最终结果
+	var canRows [][]string
+	filteredCount := 0
+	matchedMeanings := make(map[string]int)
+
+	for _, r := range tempResults {
+		if r.valid {
+			canRows = append(canRows, r.row)
+			if r.meaning != "" {
+				matchedMeanings[r.meaning]++
+			}
+		} else {
+			filteredCount++
 		}
-		canRow = append(canRow, meaning)
-		canRows = append(canRows, canRow)
 	}
 
 	// 记录统计信息
