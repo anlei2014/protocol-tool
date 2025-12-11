@@ -8,6 +8,11 @@ let fromToMapping = { mappings: {}, separator: ' => ' }; // From->To映射配置
 let dataParserConfig = {}; // CAN数据解析配置
 let timeSortOrder = 'asc'; // 时间排序状态: 'none', 'asc', 'desc'，默认升序
 
+// 分页相关变量
+let currentPage = 1; // 当前页码
+let rowsPerPage = 300; // 每页显示行数（从配置文件加载）
+let totalPages = 1; // 总页数
+
 // 加载CAN定义
 async function loadCanDefinitions() {
     try {
@@ -391,6 +396,10 @@ async function loadTableStyleConfig() {
         if (response.ok) {
             tableStyleConfig = await response.json();
             applyTableStyles();
+            // 应用分页配置
+            if (tableStyleConfig.pagination && tableStyleConfig.pagination.rowsPerPage) {
+                rowsPerPage = tableStyleConfig.pagination.rowsPerPage;
+            }
         } else {
             console.warn('无法加载表格样式配置文件，使用默认样式');
         }
@@ -629,13 +638,13 @@ function showPreview(data, filename, protocol = 'CAN') {
         return false;
     };
 
-    // 生成统一视图数据
-    const maxRows = Math.min(data.rows.length, 300);
+    // 生成统一视图数据（处理所有行，让分页控制显示）
     unifiedRows = []; // 重置统一视图数据
     const idMeaningMap = new Map(); // 左侧唯一消息ID和Meaning的映射
     hiddenMessageIds.clear(); // 重置隐藏的消息ID集合
+    currentPage = 1; // 重置到第一页
 
-    for (let i = 0; i < maxRows; i++) {
+    for (let i = 0; i < data.rows.length; i++) {
         const row = data.rows[i] || [];
         const time = idxTime >= 0 ? (row[idxTime] || '') : '';
         const source = idxSource >= 0 ? (row[idxSource] || '') : '';
@@ -790,13 +799,14 @@ function showPreview(data, filename, protocol = 'CAN') {
     });
 }
 
-// 渲染表格（带过滤和排序）
+// 渲染表格（带过滤、排序和分页）
 function renderTable(totalRows) {
     const tableBody = document.getElementById('tableBody');
 
     // 如果 unifiedRows 为空，不渲染
     if (!unifiedRows || unifiedRows.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">没有数据</td></tr>';
+        hidePaginationControls();
         return;
     }
 
@@ -816,13 +826,24 @@ function renderTable(totalRows) {
         });
     }
 
+    // 计算分页
+    totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    if (currentPage > totalPages) {
+        currentPage = totalPages > 0 ? totalPages : 1;
+    }
+
+    // 获取当前页的数据
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = Math.min(startIndex + rowsPerPage, filteredRows.length);
+    const pageRows = filteredRows.slice(startIndex, endIndex);
+
     // 渲染表格数据
     let tableHTML = '';
-    if (filteredRows.length === 0) {
+    if (pageRows.length === 0) {
         tableHTML = `<tr><td colspan="6" style="text-align: center; color: #999;">没有数据</td></tr>`;
     } else {
         const columnWidths = ['50px', '230px', '180px', '300px', '200px', 'auto']; // #, Time, From->To, Id, Data, Description
-        tableHTML = filteredRows.map((item, displayIndex) => {
+        tableHTML = pageRows.map((item, displayIndex) => {
             if (!item || !item.row) {
                 return '';
             }
@@ -832,8 +853,9 @@ function renderTable(totalRows) {
             const rowStyle = highlightStyle ?
                 `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
 
-            // 构建带行号的行数据（使用显示顺序索引，从1开始）
-            const rowWithLineNumber = [displayIndex + 1, ...item.row];
+            // 构建带行号的行数据（使用全局索引，从1开始）
+            const globalIndex = startIndex + displayIndex + 1;
+            const rowWithLineNumber = [globalIndex, ...item.row];
 
             return `
                 <tr style="${rowStyle}">
@@ -849,14 +871,117 @@ function renderTable(totalRows) {
         }).join('');
     }
 
-    // 若总数超过300，添加提示
-    if (totalRows > 300) {
-        const hiddenCount = unifiedRows.length - filteredRows.length;
-        tableHTML += `<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">显示前300行，共${totalRows}行数据${hiddenCount > 0 ? ` (已隐藏 ${hiddenCount} 行)` : ''}</td></tr>`;
-    }
-
     // 一次性设置innerHTML
     tableBody.innerHTML = tableHTML;
+
+    // 渲染分页控件
+    renderPaginationControls(filteredRows.length, startIndex + 1, endIndex);
+}
+
+// 渲染分页控件
+function renderPaginationControls(totalFilteredRows, startRow, endRow) {
+    const paginationContainer = document.getElementById('paginationContainer');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationControls = document.getElementById('paginationControls');
+
+    if (!paginationContainer || !paginationInfo || !paginationControls) return;
+
+    // 如果没有数据，隐藏分页控件
+    if (totalFilteredRows === 0) {
+        paginationContainer.style.display = 'none';
+        return;
+    }
+
+    // 显示分页控件
+    paginationContainer.style.display = 'flex';
+
+    // 更新分页信息
+    if (totalPages <= 1) {
+        paginationInfo.textContent = `共 ${totalFilteredRows} 行`;
+        paginationControls.innerHTML = ''; // 只有一页时不显示分页按钮
+        return;
+    }
+
+    paginationInfo.textContent = `显示第 ${startRow}-${endRow} 行，共 ${totalFilteredRows} 行 (第 ${currentPage}/${totalPages} 页)`;
+
+    // 生成分页按钮
+    let paginationHTML = '';
+
+    // 上一页按钮
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage - 1}); return false;" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    `;
+
+    // 页码按钮（显示当前页附近的页码）
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    // 调整起始页
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // 第一页
+    if (startPage > 1) {
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(1); return false;">1</a></li>`;
+        if (startPage > 2) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+
+    // 中间页码
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+
+    // 最后一页
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${totalPages}); return false;">${totalPages}</a></li>`;
+    }
+
+    // 下一页按钮
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage + 1}); return false;" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    `;
+
+    paginationControls.innerHTML = paginationHTML;
+}
+
+// 隐藏分页控件
+function hidePaginationControls() {
+    const paginationContainer = document.getElementById('paginationContainer');
+    if (paginationContainer) {
+        paginationContainer.style.display = 'none';
+    }
+}
+
+// 跳转到指定页
+function goToPage(pageNumber) {
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    currentPage = pageNumber;
+    renderTable(unifiedRows.length);
+
+    // 滚动到表格顶部
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+        tableContainer.scrollTop = 0;
+    }
 }
 
 // 切换时间排序
