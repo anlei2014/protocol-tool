@@ -148,6 +148,7 @@ function searchMessages() {
 
     const searchTerm = searchInput.value.toLowerCase();
     const tableBody = document.getElementById('tableBody');
+    const paginationContainer = document.getElementById('paginationContainer');
 
     if (!tableBody || !unifiedRows || unifiedRows.length === 0) return;
 
@@ -157,7 +158,7 @@ function searchMessages() {
         return;
     }
 
-    // 过滤包含搜索词的行
+    // 过滤包含搜索词的行（排除被隐藏的消息ID）
     const filteredRows = unifiedRows.filter(item => {
         if (!item || !item.row) return false;
         if (hiddenMessageIds.has(item.id)) return false;
@@ -167,24 +168,33 @@ function searchMessages() {
         );
     });
 
+    // 列宽配置（与 renderTable 保持一致：#, Time, From->To, Id, Data, Description）
+    const columnWidths = ['50px', '230px', '180px', '300px', '200px', 'auto'];
+
     // 渲染过滤后的结果
     let tableHTML = '';
     if (filteredRows.length === 0) {
-        tableHTML = `<tr><td colspan="4" style="text-align: center; color: #999;">未找到匹配的消息</td></tr>`;
+        tableHTML = `<tr><td colspan="6" style="text-align: center; color: #999;">未找到匹配的消息</td></tr>`;
     } else {
-        tableHTML = filteredRows.map(item => {
+        tableHTML = filteredRows.map((item, displayIndex) => {
+            if (!item || !item.row) return '';
+
             // 获取行高亮样式
             const highlightStyle = typeof getRowHighlightStyle === 'function' ? getRowHighlightStyle(item.row) : null;
             const rowStyle = highlightStyle ?
                 `background-color: ${highlightStyle.backgroundColor || 'inherit'}; color: ${highlightStyle.textColor || 'inherit'};` : '';
 
+            // 构建带行号的行数据（行号从1开始）
+            const globalIndex = displayIndex + 1;
+            const rowWithLineNumber = [globalIndex, ...item.row];
+
             return `
                 <tr style="${rowStyle}">
-                    ${item.row.map((cell, colIndex) => {
-                const width = colIndex === 0 ? '280px' : 'auto';
-                const cellText = escapeHtml(cell);
-                // 高亮搜索词
-                const highlightedText = cellText.replace(
+                    ${rowWithLineNumber.map((cell, colIndex) => {
+                const width = columnWidths[colIndex] || 'auto';
+                const cellText = escapeHtml(String(cell));
+                // 高亮搜索词（行号列不需要高亮）
+                const highlightedText = colIndex === 0 ? cellText : cellText.replace(
                     new RegExp(escapeHtml(searchTerm), 'gi'),
                     match => `<mark>${match}</mark>`
                 );
@@ -199,4 +209,15 @@ function searchMessages() {
     }
 
     tableBody.innerHTML = tableHTML;
+
+    // 搜索时隐藏分页控件（显示所有匹配结果）
+    if (paginationContainer) {
+        paginationContainer.style.display = 'none';
+    }
+
+    // 更新预览信息
+    const previewInfo = document.getElementById('previewInfo');
+    if (previewInfo) {
+        previewInfo.textContent = `搜索结果: ${filteredRows.length} 条`;
+    }
 }

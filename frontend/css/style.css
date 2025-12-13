@@ -399,6 +399,12 @@ body {
     background: linear-gradient(to right, #0d6efd, #0a58ca, #0d6efd);
 }
 
+/* 侧边栏容器 - 固定宽度，不被flex布局压缩 */
+#sidebarColumn {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+}
+
 /* 字体大小调整 */
 .table {
     font-size: 13px;
