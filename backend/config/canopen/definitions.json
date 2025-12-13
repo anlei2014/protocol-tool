@@ -1,4 +1,67 @@
 {
-    "definitions": {},
-    "_description": "CANOPEN协议消息定义文件 - 待配置"
+    "33": {
+        "hex": "33",
+        "dec": "51",
+        "description": "logEvent"
+    },
+    "2040": {
+        "hex": "2040",
+        "dec": "8256",
+        "description": "command_register"
+    },
+    "2041": {
+        "hex": "2041",
+        "dec": "8257",
+        "description": "state_of_device_actual"
+    },
+    "2042": {
+        "hex": "2042",
+        "dec": "8258",
+        "description": "mode_of_operation"
+    },
+    "2043": {
+        "hex": "2043",
+        "dec": "8259",
+        "description": "mode_of_operation_actual"
+    },
+    "2071": {
+        "hex": "2071",
+        "dec": "8305",
+        "description": "tube_voltage_actual"
+    },
+    "2072": {
+        "hex": "2072",
+        "dec": "8306",
+        "description": "tube_voltage_selected"
+    },
+    "2081": {
+        "hex": "2081",
+        "dec": "8321",
+        "description": "tube_current_actual"
+    },
+    "2083": {
+        "hex": "2083",
+        "dec": "8323",
+        "description": "mAs_actual_record"
+    },
+    "2085": {
+        "hex": "2085",
+        "dec": "8325",
+        "description": "tube_current_selected"
+    },
+    "2086": {
+        "hex": "2086",
+        "dec": "8326",
+        "description": "mAs_selected_record"
+    },
+    "21b0": {
+        "hex": "21b0",
+        "dec": "8624",
+        "description": "Tube_HUR_actual(Heat Unit Remaining)"
+    },
+    "21c1": {
+        "hex": "21c1",
+        "dec": "8641",
+        "description": "Buck_Boost_monitoring"
+    }
 }

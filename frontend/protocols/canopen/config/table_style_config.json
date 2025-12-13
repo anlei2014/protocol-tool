@@ -1,0 +1,28 @@
+{
+    "table": {
+        "fontFamily": "'Consolas', 'Monaco', 'Courier New', monospace",
+        "fontSize": "13px",
+        "rowOddBackground": "#ffffff",
+        "rowEvenBackground": "#f0f4f8",
+        "rowHoverBackground": "#e8f4fc",
+        "rowBorderColor": "#dee2e6"
+    },
+    "pagination": {
+        "rowsPerPage": 500,
+        "showJumpToPage": true
+    },
+    "_description": "表格样式配置文件",
+    "_usage": {
+        "fontFamily": "表格字体，可使用多个字体作为后备",
+        "fontSize": "表格字体大小",
+        "rowOddBackground": "奇数行背景色",
+        "rowEvenBackground": "偶数行背景色",
+        "rowHoverBackground": "鼠标悬停时的背景色",
+        "rowBorderColor": "行分隔线颜色"
+    },
+    "_fontExamples": {
+        "等宽字体": "'Consolas', 'Monaco', 'Courier New', monospace",
+        "无衬线字体": "'Segoe UI', 'Arial', sans-serif",
+        "中文字体": "'Microsoft YaHei', '微软雅黑', sans-serif"
+    }
+}
