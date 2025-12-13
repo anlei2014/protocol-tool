@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计图 - CSV解析工具</title>
+    <!-- Bootstrap CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css?v=3">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="d-flex flex-column vh-100">
+        <!-- Header -->
+        <header class="text-center text-white py-2 flex-shrink-0">
+            <div class="container-fluid d-flex justify-content-between align-items-center">
+                <a href="#" class="btn btn-outline-light btn-sm" id="backBtn">
+                    <i class="bi bi-arrow-left me-1"></i>返回预览
+                </a>
+                <div>
+                    <h5 class="fw-bold mb-0">统计图 <small class="text-white-50" id="pageSubtitle"></small></h5>
+                </div>
+                <div style="width: 100px;"></div>
+            </div>
+        </header>
+
+        <!-- 功能菜单栏 -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm flex-shrink-0 mx-2 mb-2">
+            <div class="container-fluid">
+                <ul class="navbar-nav me-auto mb-0">
+                    <li class="nav-item">
+                        <span class="nav-link">
+                            <i class="bi bi-graph-up-arrow me-1"></i>Reply Thermal State - HUR 统计
+                        </span>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-info me-2" id="fileName">加载中...</span>
+                    <span class="badge bg-secondary" id="dataInfo">正在加载...</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 图表区域 -->
+        <div class="container-fluid flex-grow-1 overflow-hidden mb-2 px-2">
+            <div class="row h-100 g-2">
+                <!-- 左侧：图表选项 -->
+                <div class="col-md-3 col-lg-2 h-100">
+                    <div class="card shadow h-100 border-0">
+                        <div class="card-header py-2"
+                            style="background: linear-gradient(135deg, #6022A6 0%, #3E166E 100%);">
+                            <h6 class="mb-0 small fw-bold text-white">数据选项</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">CAN ID</label>
+                                <select class="form-select form-select-sm" id="canIdSelect" disabled>
+                                    <option value="2cf" selected>0x2CF - Reply Thermal State</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">数据字段</label>
+                                <select class="form-select form-select-sm" id="fieldSelect" disabled>
+                                    <option value="hur" selected>HUR (%)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">图表类型</label>
+                                <select class="form-select form-select-sm" id="chartTypeSelect">
+                                    <option value="line" selected>折线图</option>
+                                    <option value="scatter">散点图</option>
+                                </select>
+                            </div>
+                            <hr>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-sm" id="refreshBtn">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>刷新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：图表显示 -->
+                <div class="col-md-9 col-lg-10 h-100">
+                    <div class="card shadow h-100 border-0">
+                        <div class="card-header py-2"
+                            style="background: linear-gradient(135deg, #6022A6 0%, #3E166E 100%);">
+                            <h6 class="mb-0 small fw-bold text-white" id="chartTitle">HUR 随时间变化趋势</h6>
+                        </div>
+                        <div class="card-body p-3" style="position: relative;">
+                            <canvas id="hurChart"></canvas>
+                            <div id="loadingOverlay"
+                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white"
+                                style="z-index: 100;">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary mb-2" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="text-muted mb-0">正在加载数据...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast 消息提示 -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="messageToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="bi bi-info-circle-fill text-primary me-2" id="toastIcon"></i>
+                    <strong class="me-auto">系统消息</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toastBody">
+                    消息内容
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <!-- Statistics JS -->
+    <script src="/protocols/can/js/statistics.js"></script>
+</body>
+
+</html>

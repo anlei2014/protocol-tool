@@ -66,6 +66,21 @@ function showGraph(type) {
         'distribution': '分布图',
         'statistics': '统计图'
     };
+
+    if (type === 'statistics') {
+        // 跳转到统计图页面
+        const urlParams = new URLSearchParams(window.location.search);
+        const filename = urlParams.get('file');
+        const protocol = urlParams.get('protocol') || 'CAN';
+
+        if (filename) {
+            window.location.href = `/can/statistics.html?file=${filename}&protocol=${protocol}`;
+        } else {
+            showMessage('缺少文件参数，无法打开统计图', 'error');
+        }
+        return;
+    }
+
     showMessage(`${graphTypes[type]}功能开发中...`, 'info');
 }
 

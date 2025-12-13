@@ -73,6 +73,11 @@ func main() {
 		c.File("../frontend/protocols/can/preview.html")
 	})
 
+	// CAN统计图页面路由
+	r.GET("/can/statistics.html", func(c *gin.Context) {
+		c.File("../frontend/protocols/can/statistics.html")
+	})
+
 	r.GET("/canopen/preview.html", func(c *gin.Context) {
 		c.File("../frontend/protocols/canopen/preview.html")
 	})
