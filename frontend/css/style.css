@@ -4,6 +4,11 @@ body {
     min-height: 100vh;
 }
 
+/* Toast消息容器 - 确保显示在最上层 */
+.toast-container {
+    z-index: 9999 !important;
+}
+
 /* 上传区域样式 */
 .upload-area {
     transition: all 0.3s ease;
