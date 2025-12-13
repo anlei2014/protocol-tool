@@ -290,7 +290,7 @@ body {
 .navbar {
     background: rgba(255, 255, 255, 0.85) !important;
     border-radius: 12px;
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 1rem;
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -298,6 +298,11 @@ body {
     position: relative;
     z-index: 2000;
     font-size: 14px;
+}
+
+/* 导航链接样式 - 更紧凑的上下间距 */
+.navbar .nav-link {
+    padding: 0.25rem 0.75rem !important;
 }
 
 @media (max-width: 992px) {
