@@ -21,52 +21,39 @@ protocol-tool/
 │   │   └── 📄 csv.go                      # CSV数据结构与响应模型
 │   ├── 📁 services/                       # 业务逻辑层
 │   │   └── 📄 csv_service.go              # 文件处理、协议解析服务
-│   └── 📁 config/                         # 协议配置目录（可扩展）
+│   ├── 📁 utils/                          # 工具函数
+│   │   └── � logger.go                   # 日志处理
+│   └── �📁 config/                         # 协议配置目录（可扩展）
 │       ├── 📁 can/                        # CAN协议配置
 │       │   ├── 📄 definitions.json        # CAN ID定义与消息含义
 │       │   ├── 📄 from_to_mapping.json    # From->To列映射规则
 │       │   ├── 📄 name_definitions.json   # Name字段到Id描述映射
-│       │   └── 📄 row_highlight.json      # 行高亮颜色配置
-│       ├── 📁 canopen/                    # CANOPEN协议配置（结构同CAN）
-│       │   ├── 📄 definitions.json
-│       │   ├── 📄 from_to_mapping.json
-│       │   ├── 📄 name_definitions.json
-│       │   └── 📄 row_highlight.json
-│       └── 📁 common/                     # 公共配置（预留）
+│       │   ├── 📄 row_highlight.json      # 行高亮颜色配置
+│       │   ├── 📄 data_parser.json        # 详细数据解析规则
+│       │   └── 📄 row_filter.json         # CSV行过滤配置
+│       ├── 📁 canopen/                    # CANOPEN协议配置
+│       └── 📁 common/                     # 公共配置
 │
 ├── 📁 frontend/                           # 前端静态文件
 │   ├── 📄 index.html                      # 主页面（文件上传/管理）
 │   ├── 📁 css/                            # 样式文件
-│   │   ├── 📄 style.css                   # 自定义主题样式
-│   │   ├── 📄 bootstrap.min.css           # Bootstrap框架
-│   │   ├── 📄 bootstrap-icons.min.css     # Bootstrap图标
-│   │   └── 📄 dropdown-fix.css            # 下拉菜单修复样式
-│   ├── 📁 js/                             # JavaScript脚本
-│   │   ├── 📄 script.js                   # 主页面交互逻辑
-│   │   ├── 📄 preview.js                  # 数据预览核心逻辑
-│   │   ├── 📄 menu-functions.js           # 菜单与导航功能
-│   │   └── 📄 bootstrap.bundle.min.js     # Bootstrap JS
-│   ├── 📁 config/                         # 前端配置
-│   │   └── 📄 table_style_config.json     # 表格样式配置
+│   ├──  js/                             # JavaScript脚本
+│   ├── 📁 config/                         # 前端配置 (table_style_config.json)
 │   ├── 📁 fonts/                          # 字体资源
-│   ├── 📁 common/                         # 公共组件（预留）
-│   └── 📁 protocols/                      # 协议特定页面（可扩展）
+│   ├── 📁 common/                         # 公共组件
+│   └── 📁 protocols/                      # 协议特定页面
 │       ├── 📁 can/                        # CAN协议模块
-│       │   ├── 📄 preview.html            # CAN数据预览页面
-│       │   ├── 📁 js/                     # CAN专用脚本
-│       │   ├── 📁 css/                    # CAN专用样式
-│       │   └── 📁 config/                 # CAN前端配置
 │       └── 📁 canopen/                    # CANOPEN协议模块
-│           ├── 📄 preview.html            # CANOPEN数据预览页面
-│           ├── 📁 js/                     # CANOPEN专用脚本
-│           ├── 📁 css/                    # CANOPEN专用样式
-│           └── 📁 config/                 # CANOPEN前端配置
 │
-├── 📁 uploads/                            # 上传文件存储目录
-├── 📄 server.exe                          # 编译后的服务器可执行文件
+├── � uploads/                            # 上传文件存储目录
+├── 📁 log/                                # 运行日志目录
+├── 📁 bin/                                # 辅助工具脚本
+├── 📁 build/                              # 编译输出目录
+│   └── 📄 csv-parser.exe                  # 编译后的服务器可执行文件
 ├── 📄 start.bat                           # Windows启动脚本
 ├── 📄 start.sh                            # Linux/Mac启动脚本
 ├── 📄 test_can_messages.csv               # 测试数据文件
+├── 📄 sniffer.csv                         # 嗅探数据文件
 └── 📄 README.md                           # 项目说明文档
 ```
 
@@ -76,6 +63,8 @@ protocol-tool/
 - **多协议解析**：支持CAN协议（FIXED格式）和CANOPEN协议（Mobiled格式）
 - **文件上传**：支持拖拽和点击上传CSV文件
 - **智能解析**：根据选择的协议自动处理数据格式
+- **自动解析**：上传文件后立即触发解析，无需额外点击
+- **高速缓存**：解析结果持久化缓存，重复打开秒级加载
 - **数据预览**：表格形式展示解析结果，支持大数据量
 - **文件管理**：查看、删除已上传的文件
 
@@ -84,6 +73,9 @@ protocol-tool/
 - **From->To映射**：根据Name字段自动填充消息方向
 - **Id描述映射**：Name字段自动映射为可读的Id描述
 - **行高亮**：根据消息类型自动高亮显示（如RTB信号等）
+- **智能行过滤**：可配置的CSV行过滤（基于正则/精确匹配）
+- **深度数据解析**：支持Bitfield、枚举值、单位换算等复杂规则
+- **高性能处理**：多线程并行解析，大幅提升大数据量处理速度
 - **表格样式配置**：可自定义表格外观（列宽、颜色等）
 
 ### 💡 用户体验
@@ -143,6 +135,8 @@ start.bat
 | `from_to_mapping.json` | Name字段到From->To方向的映射规则 |
 | `name_definitions.json` | Name字段到Id描述的映射 |
 | `row_highlight.json` | 行高亮规则（颜色、匹配条件） |
+| `data_parser.json` | 详细数据解析规则（位偏移、枚举等） |
+| `row_filter.json` | CSV行过滤与验证配置 |
 
 ### 前端配置 (`frontend/config/`)
 
@@ -198,3 +192,4 @@ go version
 - **v1.1.0**：添加CAN/CANOPEN协议支持
 - **v1.2.0**：优化用户体验，修复文件名显示问题
 - **v1.3.0**：添加配置驱动的数据展示增强功能
+- **v1.4.0**：新增自动解析、缓存系统、行过滤及复杂数据解析支持

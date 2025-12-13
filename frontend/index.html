@@ -1,160 +1,162 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV解析工具</title>
-    <!-- Bootstrap CSS - 使用本地文件 -->
+    <title>X-Ray Protocol Analyzer</title>
+    <!-- Bootstrap CSS -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons - 使用本地文件 -->
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        .protocol-card {
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .protocol-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .protocol-card.selected {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        }
-
-        .protocol-card.selected .protocol-icon {
-            color: #667eea;
-        }
-
-        .upload-area.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .protocol-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-    </style>
 </head>
 
 <body>
-    <div class="container-fluid py-4">
+    <!-- Background Particles -->
+    <div class="container-fluid content-container pb-3">
         <!-- Header -->
-        <header class="text-center text-white mb-5">
-            <h1 class="display-4 fw-bold mb-3">CSV解析工具</h1>
-            <p class="lead">上传CSV文件，快速解析和预览数据</p>
+        <header class="text-center mb-2 fade-in-up">
+            <div class="mb-1">
+                <i class="bi bi-radioactive fs-2 text-primary" style="opacity: 0.8;"></i>
+            </div>
+            <h1 class="h4 fw-bold mb-1">X-Ray 协议解析工具</h1>
+            <p class="small text-secondary mb-0">
+                <i class="bi bi-activity me-1"></i>专业医疗设备日志可视化平台
+            </p>
         </header>
 
-        <main class="row g-4">
-            <!-- 协议选择与文件上传区域（合并） -->
-            <div class="col-12">
-                <div class="card shadow-lg">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>选择协议并上传文件
-                            <span class="badge bg-secondary ms-2" id="selectedProtocolBadge"
-                                style="display: none;"></span>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- 协议选择卡片 -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="card protocol-card h-100" id="protocolCAN" onclick="selectProtocol('CAN')">
-                                    <div class="card-body text-center py-3">
-                                        <i class="bi bi-cpu protocol-icon display-5 text-primary mb-2"></i>
-                                        <h6 class="card-title mb-1">CAN 协议</h6>
-                                        <p class="card-text text-muted small mb-0">FixedRAD 格式</p>
+        <main class="row g-4 justify-content-center">
+            <!-- 滑动容器 -->
+            <div class="col-lg-10">
+                <div class="slider-container">
+                    <div class="slider-wrapper" id="sliderWrapper">
+                        <!-- 配置与上传面板 -->
+                        <div class="panel panel-config">
+                            <div class="card shadow-lg border-0 position-relative">
+                                <!-- 历史记录书签 -->
+                                <div class="bookmark-tab" onclick="toggleHistoryPanel()">
+                                    <i class="bi bi-clock-history me-1"></i>
+                                    <span>历史记录</span>
+                                </div>
+                                
+                                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                                    <h5 class="mb-0 fw-bold">
+                                        <i class="bi bi-sliders me-2 text-primary"></i>配置与上传
+                                        <span class="badge rounded-pill ms-2" id="selectedProtocolBadge"
+                                            style="display: none;"></span>
+                                    </h5>
+                                </div>
+                                <div class="card-body p-4">
+                                    <!-- 协议选择卡片 -->
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-4">
+                                            <div class="card protocol-card h-100" id="protocolCAN" onclick="selectProtocol('CAN')">
+                                                <div class="card-body text-center py-4">
+                                                    <i class="bi bi-heart-pulse protocol-icon"></i>
+                                                    <h5 class="card-title fw-bold">CAN 协议</h5>
+                                                    <p class="card-text text-muted small">FixedRAD 格式解析</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card protocol-card h-100" id="protocolCANOPEN"
+                                                onclick="selectProtocol('CANOPEN')">
+                                                <div class="card-body text-center py-4">
+                                                    <i class="bi bi-activity protocol-icon"></i>
+                                                    <h5 class="card-title fw-bold">CANOPEN 协议</h5>
+                                                    <p class="card-text text-muted small">Mobiled 格式解析</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="card protocol-card h-100" id="protocolCOMMON"
+                                                onclick="selectProtocol('COMMON')">
+                                                <div class="card-body text-center py-4">
+                                                    <i class="bi bi-file-medical protocol-icon"></i>
+                                                    <h5 class="card-title fw-bold">COMMON 协议</h5>
+                                                    <p class="card-text text-muted small">通用 CSV 格式</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 动态扫描指示 -->
+                                    <div class="position-relative my-4">
+                                        <hr class="border-secondary opacity-25">
+                                        <div
+                                            class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">
+                                            <i class="bi bi-arrow-down-circle"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- 上传区域 -->
+                                    <div class="upload-area p-5 text-center d-flex align-items-center justify-content-center disabled"
+                                        id="uploadArea" style="min-height: 200px;">
+                                        <div class="upload-content">
+                                            <div class="mb-3">
+                                                <i class="bi bi-cloud-arrow-up display-3 text-primary opacity-50"></i>
+                                            </div>
+                                            <h5 class="mb-2 fw-bold" id="uploadTitle">请先选择协议</h5>
+                                            <p class="text-muted mb-4 small" id="uploadSubtitle">选择上方协议以激活上传扫描器</p>
+                                            <input type="file" id="fileInput" accept=".csv" class="d-none">
+                                            <button class="btn btn-primary px-4 py-2" id="selectFileBtn" disabled>
+                                                <i class="bi bi-search me-2"></i>选择文件...
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 协议提示 -->
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted" id="protocolHint">
+                                            <i class="bi bi-info-circle me-1"></i>等待协议选择...
+                                        </small>
+                                    </div>
+
+                                    <!-- 上传进度 -->
+                                    <div class="upload-progress mt-4 px-5" id="uploadProgress" style="display: none;">
+                                        <div class="progress shadow-sm" style="height: 10px; border-radius: 5px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                                id="progressFill" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <p class="text-center mt-2 small text-primary fw-bold" id="progressText">
+                                            <i class="bi bi-gear-wide-connected me-1 fa-spin"></i>数据解析中...
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card protocol-card h-100" id="protocolCANOPEN"
-                                    onclick="selectProtocol('CANOPEN')">
-                                    <div class="card-body text-center py-3">
-                                        <i class="bi bi-diagram-3 protocol-icon display-5 text-info mb-2"></i>
-                                        <h6 class="card-title mb-1">CANOPEN 协议</h6>
-                                        <p class="card-text text-muted small mb-0">Mobiled 格式</p>
+                        </div>
+
+                        <!-- 历史记录面板 -->
+                        <div class="panel panel-history">
+                            <div class="card shadow-lg border-0 position-relative">
+                                <!-- 返回书签 -->
+                                <div class="bookmark-tab bookmark-tab-back" onclick="toggleConfigPanel()">
+                                    <i class="bi bi-arrow-left me-1"></i>
+                                    <span>返回配置</span>
+                                </div>
+                                
+                                <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0 fw-bold">
+                                        <i class="bi bi-folder2-open me-2 text-primary"></i>历史记录
+                                        <span class="badge bg-light text-dark border ms-2" id="fileListProtocolBadge"
+                                            style="display: none;"></span>
+                                    </h5>
+                                    <button class="btn btn-light btn-sm rounded-circle shadow-sm" onclick="loadFiles()"
+                                        title="刷新列表">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="files-list" id="filesList">
+                                        <div class="empty-state text-center py-5">
+                                            <i class="bi bi-inbox display-4 text-light"></i>
+                                            <h5 class="mt-3 text-muted">暂无文件记录</h5>
+                                            <p class="text-muted small">上传的文件将在此处归档</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card protocol-card h-100" id="protocolCOMMON"
-                                    onclick="selectProtocol('COMMON')">
-                                    <div class="card-body text-center py-3">
-                                        <i
-                                            class="bi bi-file-earmark-text protocol-icon display-5 text-success mb-2"></i>
-                                        <h6 class="card-title mb-1">COMMON 协议</h6>
-                                        <p class="card-text text-muted small mb-0">通用 CSV 格式</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 分割线 -->
-                        <hr class="my-3">
-
-                        <!-- 上传区域 -->
-                        <div class="upload-area border border-3 border-dashed rounded-3 p-4 text-center d-flex align-items-center justify-content-center disabled"
-                            id="uploadArea" style="min-height: 150px;">
-                            <div class="upload-content">
-                                <i class="bi bi-cloud-upload display-3 text-muted mb-2"></i>
-                                <h5 class="mb-2" id="uploadTitle">请先选择协议类型</h5>
-                                <p class="text-muted mb-3 small" id="uploadSubtitle">选择上方协议后才能上传CSV文件</p>
-                                <input type="file" id="fileInput" accept=".csv" class="d-none">
-                                <button class="btn btn-primary" id="selectFileBtn" disabled
-                                    onclick="document.getElementById('fileInput').click()">
-                                    <i class="bi bi-folder2-open me-2"></i>选择文件
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 协议提示 -->
-                        <div class="text-center mt-3">
-                            <small class="text-muted" id="protocolHint">
-                                <i class="bi bi-info-circle me-1"></i>请先选择协议类型，然后上传文件
-                            </small>
-                        </div>
-
-                        <!-- 上传进度 -->
-                        <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
-                            <div class="progress mb-2" style="height: 8px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressFill"
-                                    role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <p class="text-center mb-0" id="progressText">上传中...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 文件列表 -->
-            <div class="col-12">
-                <div class="card shadow-lg">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="bi bi-files me-2"></i>已上传文件
-                            <span class="badge bg-primary ms-2" id="fileListProtocolBadge"
-                                style="display: none;"></span>
-                        </h5>
-                        <button class="btn btn-outline-success btn-sm" onclick="loadFiles()">
-                            <i class="bi bi-arrow-clockwise me-1"></i>刷新
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="files-list" id="filesList">
-                            <div class="empty-state text-center py-4">
-                                <i class="bi bi-hand-index display-1 text-muted"></i>
-                                <h5 class="mt-3 text-muted">请先选择协议类型</h5>
-                                <p class="text-muted">选择协议后将显示对应的文件列表</p>
                             </div>
                         </div>
                     </div>
@@ -164,23 +166,26 @@
 
         <!-- Toast 消息提示 -->
         <div class="toast-container position-fixed top-0 end-0 p-3">
-            <div id="messageToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
+            <div id="messageToast" class="toast border-0 shadow-lg" role="alert" aria-live="assertive"
+                aria-atomic="true">
+                <div class="toast-header border-0 bg-white">
                     <i class="bi bi-info-circle-fill text-primary me-2" id="toastIcon"></i>
-                    <strong class="me-auto">系统消息</strong>
+                    <strong class="me-auto text-dark">系统通知</strong>
                     <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
-                <div class="toast-body" id="toastBody">
+                <div class="toast-body bg-light rounded-bottom text-secondary" id="toastBody">
                     消息内容
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS - 使用本地文件 -->
+    <!-- Bootstrap JS -->
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="/static/js/script.js"></script>
+    <!-- Particles Effect -->
+    <script src="/static/js/particles.js"></script>
 </body>
 
 </html>
