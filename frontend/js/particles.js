@@ -34,8 +34,11 @@ document.addEventListener('DOMContentLoaded', function () {
         constructor() {
             this.x = Math.random() * width;
             this.y = Math.random() * height;
-            this.vx = (Math.random() - 0.5) * config.baseSpeed;
-            this.vy = (Math.random() - 0.5) * config.baseSpeed;
+            // Store base velocity for recovery
+            this.baseVx = (Math.random() - 0.5) * config.baseSpeed;
+            this.baseVy = (Math.random() - 0.5) * config.baseSpeed;
+            this.vx = this.baseVx;
+            this.vy = this.baseVy;
             this.size = Math.random() * 2 + 1;
         }
 
@@ -56,12 +59,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     const forceDirectionX = dx / distance;
                     const forceDirectionY = dy / distance;
                     const force = (config.mouseDistance - distance) / config.mouseDistance;
-                    const directionX = forceDirectionX * force * config.baseSpeed; // Gentle push
-                    const directionY = forceDirectionY * force * config.baseSpeed;
+                    const directionX = forceDirectionX * force * config.baseSpeed * 2.5; // Stronger push
+                    const directionY = forceDirectionY * force * config.baseSpeed * 2.5;
                     this.vx -= directionX;
                     this.vy -= directionY;
                 }
             }
+
+            // Friction / Recovery logic: Smoothly return to base velocity
+            this.vx += (this.baseVx - this.vx) * 0.05;
+            this.vy += (this.baseVy - this.vy) * 0.05;
         }
 
         draw() {
