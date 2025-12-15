@@ -16,15 +16,22 @@
 <body>
     <!-- Background Particles -->
     <canvas id="particles-canvas"></canvas>
+
+    <!-- Language Toggle Button -->
+    <div class="lang-toggle" onclick="toggleLanguage()">
+        <i class="bi bi-translate me-1"></i>
+        <span id="langLabel">EN</span>
+    </div>
+
     <div class="container-fluid content-container pb-3">
         <!-- Header -->
         <header class="text-center mb-2 fade-in-up">
             <div class="mb-1">
                 <i class="bi bi-radioactive fs-2 text-primary" style="opacity: 0.8;"></i>
             </div>
-            <h1 class="h4 fw-bold mb-1">X-Ray 协议解析工具</h1>
+            <h1 class="h4 fw-bold mb-1" data-i18n="pageTitle">X-Ray 协议解析工具</h1>
             <p class="small text-secondary mb-0">
-                <i class="bi bi-activity me-1"></i>专业医疗设备日志可视化平台
+                <i class="bi bi-activity me-1"></i><span data-i18n="pageSubtitle">专业医疗设备日志可视化平台</span>
             </p>
         </header>
 
@@ -39,12 +46,13 @@
                                 <!-- 历史记录书签 -->
                                 <div class="bookmark-tab" onclick="toggleHistoryPanel()">
                                     <i class="bi bi-clock-history me-1"></i>
-                                    <span>历史记录</span>
+                                    <span data-i18n="historyTab">历史记录</span>
                                 </div>
 
                                 <div class="card-header bg-transparent border-0 pt-4 px-4">
                                     <h5 class="mb-0 fw-bold">
-                                        <i class="bi bi-sliders me-2 text-primary"></i>配置与上传
+                                        <i class="bi bi-sliders me-2 text-primary"></i><span
+                                            data-i18n="configUpload">配置与上传</span>
                                         <span class="badge rounded-pill ms-2" id="selectedProtocolBadge"
                                             style="display: none;"></span>
                                     </h5>
@@ -57,8 +65,9 @@
                                                 onclick="selectProtocol('CAN')">
                                                 <div class="card-body text-center py-4">
                                                     <i class="bi bi-heart-pulse protocol-icon"></i>
-                                                    <h5 class="card-title fw-bold">CAN 协议</h5>
-                                                    <p class="card-text text-muted small">FixedRAD 格式解析</p>
+                                                    <h5 class="card-title fw-bold" data-i18n="canProtocol">CAN 协议</h5>
+                                                    <p class="card-text text-muted small" data-i18n="canDesc">FixedRAD
+                                                        格式解析</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -67,8 +76,10 @@
                                                 onclick="selectProtocol('CANOPEN')">
                                                 <div class="card-body text-center py-4">
                                                     <i class="bi bi-activity protocol-icon"></i>
-                                                    <h5 class="card-title fw-bold">CANOPEN 协议</h5>
-                                                    <p class="card-text text-muted small">Mobiled 格式解析</p>
+                                                    <h5 class="card-title fw-bold" data-i18n="canopenProtocol">CANOPEN
+                                                        协议</h5>
+                                                    <p class="card-text text-muted small" data-i18n="canopenDesc">
+                                                        Mobiled 格式解析</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -77,8 +88,10 @@
                                                 onclick="selectProtocol('COMMON')">
                                                 <div class="card-body text-center py-4">
                                                     <i class="bi bi-file-medical protocol-icon"></i>
-                                                    <h5 class="card-title fw-bold">COMMON 协议</h5>
-                                                    <p class="card-text text-muted small">通用 CSV 格式</p>
+                                                    <h5 class="card-title fw-bold" data-i18n="commonProtocol">COMMON 协议
+                                                    </h5>
+                                                    <p class="card-text text-muted small" data-i18n="commonDesc">通用 CSV
+                                                        格式</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -100,11 +113,14 @@
                                             <div class="mb-3">
                                                 <i class="bi bi-cloud-arrow-up display-3 text-primary opacity-50"></i>
                                             </div>
-                                            <h5 class="mb-2 fw-bold" id="uploadTitle">请先选择协议</h5>
-                                            <p class="text-muted mb-4 small" id="uploadSubtitle">选择上方协议以激活上传扫描器</p>
+                                            <h5 class="mb-2 fw-bold" id="uploadTitle" data-i18n="uploadTitleDefault">
+                                                请先选择协议</h5>
+                                            <p class="text-muted mb-4 small" id="uploadSubtitle"
+                                                data-i18n="uploadSubtitleDefault">选择上方协议以激活上传扫描器</p>
                                             <input type="file" id="fileInput" accept=".csv" class="d-none">
                                             <button class="btn btn-primary px-4 py-2" id="selectFileBtn" disabled>
-                                                <i class="bi bi-search me-2"></i>选择文件...
+                                                <i class="bi bi-search me-2"></i><span
+                                                    data-i18n="selectFile">选择文件...</span>
                                             </button>
                                         </div>
                                     </div>
@@ -136,13 +152,14 @@
                                 <!-- 返回书签 -->
                                 <div class="bookmark-tab bookmark-tab-back" onclick="toggleConfigPanel()">
                                     <i class="bi bi-arrow-left me-1"></i>
-                                    <span>返回配置</span>
+                                    <span data-i18n="backToConfig">返回配置</span>
                                 </div>
 
                                 <div
                                     class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0 fw-bold">
-                                        <i class="bi bi-folder2-open me-2 text-primary"></i>历史记录
+                                        <i class="bi bi-folder2-open me-2 text-primary"></i><span
+                                            data-i18n="historyTitle">历史记录</span>
                                         <span class="badge bg-light text-dark border ms-2" id="fileListProtocolBadge"
                                             style="display: none;"></span>
                                     </h5>
@@ -155,8 +172,8 @@
                                     <div class="files-list" id="filesList">
                                         <div class="empty-state text-center py-5">
                                             <i class="bi bi-inbox display-4 text-light"></i>
-                                            <h5 class="mt-3 text-muted">暂无文件记录</h5>
-                                            <p class="text-muted small">上传的文件将在此处归档</p>
+                                            <h5 class="mt-3 text-muted" data-i18n="noFilesTitle">暂无文件记录</h5>
+                                            <p class="text-muted small" data-i18n="noFilesDesc">上传的文件将在此处归档</p>
                                         </div>
                                     </div>
                                 </div>

@@ -3,6 +3,118 @@ let currentFiles = [];
 let currentPage = 1;
 const PAGE_SIZE = 50;
 let selectedProtocol = null; // 当前选择的协议类型
+let currentLang = 'zh'; // 当前语言，默认中文
+
+// 翻译字典
+const translations = {
+    zh: {
+        pageTitle: 'X-Ray 协议解析工具',
+        pageSubtitle: '专业医疗设备日志可视化平台',
+        historyTab: '历史记录',
+        configUpload: '配置与上传',
+        canProtocol: 'CAN 协议',
+        canDesc: 'FixedRAD 格式解析',
+        canopenProtocol: 'CANOPEN 协议',
+        canopenDesc: 'Mobiled 格式解析',
+        commonProtocol: 'COMMON 协议',
+        commonDesc: '通用 CSV 格式',
+        uploadTitleDefault: '请先选择协议',
+        uploadSubtitleDefault: '选择上方协议以激活上传扫描器',
+        uploadTitleReady: '拖拽文件到此处或点击选择',
+        uploadSubtitleReady: '支持 .csv 格式文件',
+        selectFile: '选择文件...',
+        backToConfig: '返回配置',
+        historyTitle: '历史记录',
+        noFilesTitle: '暂无文件记录',
+        noFilesDesc: '上传的文件将在此处归档',
+        protocolHintWaiting: '等待协议选择...',
+        protocolHintSelected: '已选择 {protocol} 协议',
+        protocolHintRequired: '请先选择协议类型，然后才能上传文件',
+        // 文件列表翻译
+        view: '查看',
+        delete: '删除',
+        size: '大小',
+        rows: '行数',
+        columns: '列数',
+        uploadTime: '上传时间',
+        totalRecords: '共 {count} 条记录',
+        pageInfo: '共 {total} 条，第 {current}/{pages} 页'
+    },
+    en: {
+        pageTitle: 'X-Ray Protocol Analyzer',
+        pageSubtitle: 'Professional Medical Device Log Visualization Platform',
+        historyTab: 'History',
+        configUpload: 'Configuration & Upload',
+        canProtocol: 'CAN Protocol',
+        canDesc: 'FixedRAD Format Parsing',
+        canopenProtocol: 'CANOPEN Protocol',
+        canopenDesc: 'Mobiled Format Parsing',
+        commonProtocol: 'COMMON Protocol',
+        commonDesc: 'Generic CSV Format',
+        uploadTitleDefault: 'Please Select Protocol First',
+        uploadSubtitleDefault: 'Select a protocol above to activate the upload scanner',
+        uploadTitleReady: 'Drag files here or click to select',
+        uploadSubtitleReady: 'Supports .csv format files',
+        selectFile: 'Select File...',
+        backToConfig: 'Back to Config',
+        historyTitle: 'History',
+        noFilesTitle: 'No File Records',
+        noFilesDesc: 'Uploaded files will be archived here',
+        protocolHintWaiting: 'Waiting for protocol selection...',
+        protocolHintSelected: '{protocol} protocol selected',
+        protocolHintRequired: 'Please select a protocol type before uploading files',
+        // File list translations
+        view: 'View',
+        delete: 'Delete',
+        size: 'Size',
+        rows: 'Rows',
+        columns: 'Columns',
+        uploadTime: 'Upload Time',
+        totalRecords: 'Total {count} records',
+        pageInfo: 'Total {total}, Page {current}/{pages}'
+    }
+};
+
+// 获取翻译文本
+function t(key, replacements = {}) {
+    let text = translations[currentLang][key] || translations['zh'][key] || key;
+    for (const [placeholder, value] of Object.entries(replacements)) {
+        text = text.replace(`{${placeholder}}`, value);
+    }
+    return text;
+}
+
+// 切换语言
+function toggleLanguage() {
+    currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    localStorage.setItem('preferredLang', currentLang);
+    applyLanguage();
+}
+
+// 应用语言到所有元素
+function applyLanguage() {
+    // 更新语言按钮标签
+    const langLabel = document.getElementById('langLabel');
+    if (langLabel) {
+        langLabel.textContent = currentLang === 'zh' ? 'EN' : '中文';
+    }
+
+    // 更新所有带有 data-i18n 属性的元素
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang][key]) {
+            el.textContent = translations[currentLang][key];
+        }
+    });
+
+    // 更新动态内容（如协议提示）
+    updateUIForProtocolSelection();
+
+    // 刷新文件列表以应用新语言
+    if (currentFiles && currentFiles.length > 0) {
+        renderFilesList();
+    }
+}
 
 // 获取协议对应的 badge 样式类
 function getProtocolBadgeClass(protocol) {
@@ -16,6 +128,13 @@ function getProtocolBadgeClass(protocol) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function () {
+    // 加载保存的语言偏好
+    const savedLang = localStorage.getItem('preferredLang');
+    if (savedLang && (savedLang === 'zh' || savedLang === 'en')) {
+        currentLang = savedLang;
+    }
+    applyLanguage();
+
     initializeUpload();
     // 不自动加载文件列表，需要先选择协议
     updateUIForProtocolSelection();
@@ -88,9 +207,9 @@ function updateUIForProtocolSelection() {
         // 已选择协议 - 启用上传
         uploadArea.classList.remove('disabled');
         selectFileBtn.disabled = false;
-        uploadTitle.textContent = '拖拽文件到此处或点击选择';
-        uploadSubtitle.textContent = '支持 .csv 格式文件';
-        protocolHint.innerHTML = `<i class="bi bi-check-circle-fill text-success me-1"></i>已选择 ${selectedProtocol} 协议`;
+        uploadTitle.textContent = t('uploadTitleReady');
+        uploadSubtitle.textContent = t('uploadSubtitleReady');
+        protocolHint.innerHTML = `<i class="bi bi-check-circle-fill text-success me-1"></i>${t('protocolHintSelected', { protocol: selectedProtocol })}`;
 
         // 显示协议 badge
         selectedProtocolBadge.textContent = selectedProtocol;
@@ -104,9 +223,9 @@ function updateUIForProtocolSelection() {
         // 未选择协议 - 禁用上传
         uploadArea.classList.add('disabled');
         selectFileBtn.disabled = true;
-        uploadTitle.textContent = '请先选择协议类型';
-        uploadSubtitle.textContent = '选择协议后才能上传CSV文件';
-        protocolHint.innerHTML = '<i class="bi bi-info-circle me-1"></i>请先选择协议类型，然后才能上传文件';
+        uploadTitle.textContent = t('uploadTitleDefault');
+        uploadSubtitle.textContent = t('uploadSubtitleDefault');
+        protocolHint.innerHTML = `<i class="bi bi-info-circle me-1"></i>${t('protocolHintRequired')}`;
 
         // 隐藏协议 badge
         selectedProtocolBadge.style.display = 'none';
@@ -116,8 +235,8 @@ function updateUIForProtocolSelection() {
         filesList.innerHTML = `
             <div class="empty-state text-center py-4">
                 <i class="bi bi-hand-index display-1 text-muted"></i>
-                <h5 class="mt-3 text-muted">请先选择协议类型</h5>
-                <p class="text-muted">选择协议后将显示对应的文件列表</p>
+                <h5 class="mt-3 text-muted">${t('uploadTitleDefault')}</h5>
+                <p class="text-muted">${t('protocolHintRequired')}</p>
             </div>
         `;
     }
@@ -360,19 +479,19 @@ function renderFilesList() {
                             ${protocolBadge}
                         </h6>
                         <p class="card-text text-muted small mb-0">
-                            <i class="bi bi-hdd me-1"></i>大小: ${formatFileSize(file.size)} | 
-                            <i class="bi bi-list-ol me-1"></i>行数: ${file.rowCount} | 
-                            <i class="bi bi-columns me-1"></i>列数: ${file.columnCount} | 
-                            <i class="bi bi-clock me-1"></i>上传时间: ${formatDate(file.uploadTime)}
+                            <i class="bi bi-hdd me-1"></i>${t('size')}: ${formatFileSize(file.size)} | 
+                            <i class="bi bi-list-ol me-1"></i>${t('rows')}: ${file.rowCount} | 
+                            <i class="bi bi-columns me-1"></i>${t('columns')}: ${file.columnCount} | 
+                            <i class="bi bi-clock me-1"></i>${t('uploadTime')}: ${formatDate(file.uploadTime)}
                         </p>
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group">
                             <button class="btn btn-primary btn-sm" onclick="parseFile('${file.filename}', '${fileProtocol}')">
-                                <i class="bi bi-eye me-1"></i>查看
+                                <i class="bi bi-eye me-1"></i>${t('view')}
                             </button>
                             <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.filename}')">
-                                <i class="bi bi-trash me-1"></i>删除
+                                <i class="bi bi-trash me-1"></i>${t('delete')}
                             </button>
                         </div>
                     </div>
@@ -385,7 +504,7 @@ function renderFilesList() {
     if (totalPages > 1) {
         html += renderPagination(currentPage, totalPages, totalFiles);
     } else {
-        html += `<div class="text-center text-muted small mt-3">共 ${totalFiles} 条记录</div>`;
+        html += `<div class="text-center text-muted small mt-3">${t('totalRecords', { count: totalFiles })}</div>`;
     }
     filesList.innerHTML = html;
 }
@@ -420,7 +539,7 @@ function renderPagination(current, total, totalFiles) {
     return `
         <nav class="mt-4">
             <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted">共 ${totalFiles} 条，第 ${current}/${total} 页</small>
+                <small class="text-muted">${t('pageInfo', { total: totalFiles, current: current, pages: total })}</small>
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item ${current === 1 ? 'disabled' : ''}">
                         <a class="page-link" href="#" onclick="goToPage(${current - 1}); return false;"><i class="bi bi-chevron-left"></i></a>
