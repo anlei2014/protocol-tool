@@ -13,12 +13,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Configuration
     const config = {
-        particleCount: 80,
-        connectionDistance: 150,
-        mouseDistance: 200,
-        baseSpeed: 0.5,
-        color: 'rgba(96, 34, 166, 0.5)', // Theme Purple
-        lineColor: 'rgba(96, 34, 166, 0.15)'
+        particleCount: 180, // Increased density
+        connectionDistance: 120, // Slightly reduced distance to keep connections clean with more particles
+        mouseDistance: 250,
+        baseSpeed: 0.3, // Slower movement
+        color: 'rgba(255, 255, 255, 0.5)', // White particles for contrast against purple
+        lineColor: 'rgba(255, 255, 255, 0.15)' // White lines
     };
 
     // Resize handler
@@ -46,6 +46,22 @@ document.addEventListener('DOMContentLoaded', function () {
             // Bounce off edges
             if (this.x < 0 || this.x > width) this.vx *= -1;
             if (this.y < 0 || this.y > height) this.vy *= -1;
+
+            // Mouse interaction
+            if (mouse.x != null) {
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < config.mouseDistance) {
+                    const forceDirectionX = dx / distance;
+                    const forceDirectionY = dy / distance;
+                    const force = (config.mouseDistance - distance) / config.mouseDistance;
+                    const directionX = forceDirectionX * force * config.baseSpeed; // Gentle push
+                    const directionY = forceDirectionY * force * config.baseSpeed;
+                    this.vx -= directionX;
+                    this.vy -= directionY;
+                }
+            }
         }
 
         draw() {
@@ -104,6 +120,11 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('mousemove', (e) => {
         mouse.x = e.x;
         mouse.y = e.y;
+    });
+
+    window.addEventListener('mouseout', () => {
+        mouse.x = null;
+        mouse.y = null;
     });
 
     init();

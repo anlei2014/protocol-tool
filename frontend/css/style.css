@@ -4,6 +4,23 @@ body {
     min-height: 100vh;
 }
 
+/* Background Particles Canvas */
+#particles-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Ensure content stays above particles */
+.content-container {
+    position: relative;
+    z-index: 1;
+}
+
 /* Toast消息容器 - 确保显示在最上层 */
 .toast-container {
     z-index: 9999 !important;
@@ -432,11 +449,11 @@ header.fade-in-up {
 
 header.fade-in-up .bi-radioactive {
     font-size: 3.5rem !important;
-    background: linear-gradient(135deg, #6022A6 0%, #9B4DCA 100%);
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 4px 8px rgba(96, 34, 166, 0.3));
+    filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.3));
 }
 
 header.fade-in-up h1 {
