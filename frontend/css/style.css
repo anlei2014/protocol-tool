@@ -565,3 +565,25 @@ header.fade-in-up p {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* 书签标签显示/隐藏控制 */
+/* 配置面板的历史记录书签：当滑动到历史记录面板时隐藏 */
+.slider-wrapper.slide-left .panel-config .bookmark-tab {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(20px);
+}
+
+/* 历史记录面板的返回书签：默认隐藏，当滑动到历史记录面板时显示 */
+.panel-history .bookmark-tab-back {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slider-wrapper.slide-left .panel-history .bookmark-tab-back {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}

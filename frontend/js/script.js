@@ -343,7 +343,7 @@ function renderFilesList() {
     const totalPages = Math.ceil(totalFiles / PAGE_SIZE);
     if (currentPage < 1) currentPage = 1;
     if (currentPage > totalPages) currentPage = totalPages;
-    
+
     const startIdx = (currentPage - 1) * PAGE_SIZE;
     const pageFiles = sortedFiles.slice(startIdx, startIdx + PAGE_SIZE);
 
@@ -395,7 +395,7 @@ function renderPagination(current, total, totalFiles) {
     let pages = '';
     let startPage = Math.max(1, current - 2);
     let endPage = Math.min(total, current + 2);
-    
+
     if (endPage - startPage < 4) {
         if (startPage === 1) endPage = Math.min(total, 5);
         else startPage = Math.max(1, total - 4);
@@ -407,7 +407,7 @@ function renderPagination(current, total, totalFiles) {
     }
 
     for (let i = startPage; i <= endPage; i++) {
-        pages += i === current 
+        pages += i === current
             ? `<li class="page-item active"><span class="page-link">${i}</span></li>`
             : `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
     }
@@ -547,5 +547,23 @@ function toggleConfigPanel() {
     const wrapper = document.getElementById('sliderWrapper');
     if (wrapper) {
         wrapper.classList.remove('slide-left');
+
+        // 重置滚动位置
+        window.scrollTo(0, 0);
+
+        // 清空历史记录面板内容，恢复默认状态
+        const filesList = document.getElementById('filesList');
+        if (filesList) {
+            filesList.innerHTML = `
+                <div class="empty-state text-center py-5">
+                    <i class="bi bi-inbox display-4 text-light"></i>
+                    <h5 class="mt-3 text-muted">暂无文件记录</h5>
+                    <p class="text-muted small">上传的文件将在此处归档</p>
+                </div>
+            `;
+        }
+
+        // 重置分页
+        currentPage = 1;
     }
 }
