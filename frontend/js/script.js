@@ -138,7 +138,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeUpload();
     // 不自动加载文件列表，需要先选择协议
     updateUIForProtocolSelection();
-    initializeUpload();
     initializeProtocolSelection();
     initializeGlobalEvents();
     // 不自动加载文件列表，需要先选择协议
@@ -249,8 +248,9 @@ function initializeUpload() {
 
     // 点击上传区域（排除按钮区域）
     uploadArea.addEventListener('click', (e) => {
-        // 如果点击的是按钮，不触发文件选择
-        if (e.target.classList.contains('btn')) {
+        // 如果点击的是按钮或按钮内的子元素（图标、文字等），不触发文件选择
+        // 因为按钮有自己的事件处理器
+        if (e.target.closest('.btn')) {
             return;
         }
         // 检查是否已选择协议
