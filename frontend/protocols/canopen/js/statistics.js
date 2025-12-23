@@ -3,7 +3,7 @@
 // 全局变量
 let hurChart = null;
 let rawData = [];
-let dataPoints = [];
+let dataPointsSets = {}; // 存储不同数据集，如 { '默认序列': [] }
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
@@ -70,8 +70,9 @@ async function loadData(filename, protocol) {
             rawData = result.data;
             processData();
 
-            if (dataPoints.length > 0) {
-                dataInfo.textContent = `${dataPoints.length} 个数据点`;
+            const datasetsCount = Object.keys(dataPointsSets).length;
+            if (datasetsCount > 0) {
+                dataInfo.textContent = `已加载数据`;
                 dataInfo.className = 'badge bg-success';
                 createChart();
             } else {
@@ -103,7 +104,7 @@ async function loadData(filename, protocol) {
 
 // 处理数据
 function processData() {
-    dataPoints = [];
+    dataPointsSets = { '消息数量': [] };
 
     if (!rawData || !rawData.rows || !rawData.headers) return;
 
@@ -144,17 +145,19 @@ function processData() {
     });
 
     // 转换为数据点数组
+    const points = [];
     timeCountMap.forEach((count, time) => {
-        dataPoints.push({
+        points.push({
             time: time,
             value: count
         });
     });
 
     // 按时间排序
-    dataPoints.sort((a, b) => a.time.localeCompare(b.time));
+    points.sort((a, b) => a.time.localeCompare(b.time));
+    dataPointsSets['消息数量'] = points;
 
-    console.log(`找到 ${dataPoints.length} 个时间点的数据`);
+    console.log(`找到 ${points.length} 个时间点的数据`);
 }
 
 // 创建图表
@@ -162,9 +165,32 @@ function createChart() {
     const ctx = document.getElementById('hurChart').getContext('2d');
     const chartType = document.getElementById('chartTypeSelect').value;
 
-    // 准备数据
-    const labels = dataPoints.map(p => formatTime(p.time));
-    const data = dataPoints.map(p => p.value);
+    // 获取所有时间标签
+    const allTimesSet = new Set();
+    Object.values(dataPointsSets).forEach(set => {
+        set.forEach(p => allTimesSet.add(p.time));
+    });
+    const allTimes = Array.from(allTimesSet).sort();
+    const labels = allTimes.map(t => formatTime(t));
+
+    // 准备数据集
+    const datasets = Object.entries(dataPointsSets).map(([label, points], index) => {
+        const color = index === 0 ? '#6022A6' : (index === 1 ? '#ff4d4f' : '#1890ff');
+        return {
+            label: label,
+            data: allTimes.map(t => {
+                const p = points.find(point => point.time === t);
+                return p ? p.value : null;
+            }),
+            borderColor: color,
+            backgroundColor: chartType === 'line' ? `${color}1A` : `${color}99`,
+            borderWidth: 2,
+            fill: chartType === 'line',
+            tension: 0.1,
+            pointRadius: chartType === 'line' ? 2 : 4,
+            spanGaps: true
+        };
+    });
 
     // 销毁旧图表
     if (hurChart) {
@@ -176,20 +202,7 @@ function createChart() {
         type: chartType,
         data: {
             labels: labels,
-            datasets: [{
-                label: '消息数量',
-                data: data,
-                borderColor: '#6022A6',
-                backgroundColor: chartType === 'line' ? 'rgba(96, 34, 166, 0.1)' : 'rgba(96, 34, 166, 0.6)',
-                borderWidth: 2,
-                fill: chartType === 'line',
-                tension: 0.1,
-                pointRadius: chartType === 'line' ? 2 : 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#6022A6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 1
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -253,7 +266,7 @@ function createChart() {
 
 // 更新图表类型
 function updateChart() {
-    if (dataPoints.length > 0) {
+    if (Object.keys(dataPointsSets).length > 0) {
         createChart();
     }
 }

@@ -3,7 +3,8 @@
 // 全局变量
 let hurChart = null;
 let rawData = [];
-let hurDataPoints = [];
+let anodeDataPoints = [];
+let casingDataPoints = [];
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
@@ -70,8 +71,9 @@ async function loadData(filename, protocol) {
             rawData = result.data;
             processHURData();
 
-            if (hurDataPoints.length > 0) {
-                dataInfo.textContent = `${hurDataPoints.length} 个数据点`;
+            const totalPoints = anodeDataPoints.length + casingDataPoints.length;
+            if (totalPoints > 0) {
+                dataInfo.textContent = `Anode: ${anodeDataPoints.length}, Casing: ${casingDataPoints.length}`;
                 dataInfo.className = 'badge bg-success';
                 createChart();
             } else {
@@ -103,7 +105,8 @@ async function loadData(filename, protocol) {
 
 // 处理 HUR 数据
 function processHURData() {
-    hurDataPoints = [];
+    anodeDataPoints = [];
+    casingDataPoints = [];
 
     if (!rawData || !rawData.rows || !rawData.headers) return;
 
@@ -137,24 +140,33 @@ function processHURData() {
         // 检查是否是 0x2CF 消息
         if (parsedId !== '2cf') return;
 
-        // 从数据字节中解析 HUR 值
-        // HUR 在字节 5-6 (索引 5 和 6)，uint16_le，scale=0.01
-        if (dataBytes.length < 7) return;
+        // 获取 Index 字节 (byte 0)
+        if (dataBytes.length < 1) return;
+        const indexByte = parseInt(dataBytes[0], 16);
 
         const hurValue = parseHURFromBuffer(bufferField);
+        if (hurValue === null) return;
 
-        if (hurValue !== null) {
-            hurDataPoints.push({
-                time: timeField,
-                value: hurValue
-            });
+        const point = {
+            time: timeField,
+            value: hurValue
+        };
+
+        // 根据 Index 区分 Anode Heat 和 Casing Heat
+        // 0x10 (16), 0x20 (32) 为 Anode Heat
+        // 0x11 (17), 0x21 (33) 为 Casing Heat
+        if (indexByte === 0x10 || indexByte === 0x20) {
+            anodeDataPoints.push(point);
+        } else if (indexByte === 0x11 || indexByte === 0x21) {
+            casingDataPoints.push(point);
         }
     });
 
     // 按时间排序
-    hurDataPoints.sort((a, b) => a.time.localeCompare(b.time));
+    anodeDataPoints.sort((a, b) => a.time.localeCompare(b.time));
+    casingDataPoints.sort((a, b) => a.time.localeCompare(b.time));
 
-    console.log(`找到 ${hurDataPoints.length} 个 0x2CF HUR 数据点`);
+    console.log(`找到数据点 - Anode: ${anodeDataPoints.length}, Casing: ${casingDataPoints.length}`);
 }
 
 // 从 Buffer 解析 HUR 值
@@ -189,9 +201,24 @@ function createChart() {
     const ctx = document.getElementById('hurChart').getContext('2d');
     const chartType = document.getElementById('chartTypeSelect').value;
 
-    // 准备数据
-    const labels = hurDataPoints.map(p => formatTime(p.time));
-    const data = hurDataPoints.map(p => p.value);
+    // 提取所有唯一的时间点作为 X 轴标签并排序
+    const allTimes = Array.from(new Set([
+        ...anodeDataPoints.map(p => p.time),
+        ...casingDataPoints.map(p => p.time)
+    ])).sort();
+
+    const labels = allTimes.map(t => formatTime(t));
+
+    // 辅助函数：根据时间对齐数据
+    const alignData = (points) => {
+        return allTimes.map(t => {
+            const p = points.find(point => point.time === t);
+            return p ? p.value : null; // 不存在的时间点返回 null，Chart.js 会处理断点
+        });
+    };
+
+    const anodeData = alignData(anodeDataPoints);
+    const casingData = alignData(casingDataPoints);
 
     // 销毁旧图表
     if (hurChart) {
@@ -203,20 +230,30 @@ function createChart() {
         type: chartType,
         data: {
             labels: labels,
-            datasets: [{
-                label: 'HUR (%)',
-                data: data,
-                borderColor: '#6022A6',
-                backgroundColor: chartType === 'line' ? 'rgba(96, 34, 166, 0.1)' : 'rgba(96, 34, 166, 0.6)',
-                borderWidth: 2,
-                fill: chartType === 'line',
-                tension: 0.1,
-                pointRadius: chartType === 'line' ? 2 : 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#6022A6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 1
-            }]
+            datasets: [
+                {
+                    label: 'Anode Heat HUR (%)',
+                    data: anodeData,
+                    borderColor: '#ff4d4f', // 红色
+                    backgroundColor: chartType === 'line' ? 'rgba(255, 77, 79, 0.1)' : 'rgba(255, 77, 79, 0.6)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: chartType === 'line' ? 2 : 4,
+                    spanGaps: true
+                },
+                {
+                    label: 'Casing Heat HUR (%)',
+                    data: casingData,
+                    borderColor: '#1890ff', // 蓝色
+                    backgroundColor: chartType === 'line' ? 'rgba(24, 144, 255, 0.1)' : 'rgba(24, 144, 255, 0.6)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: chartType === 'line' ? 2 : 4,
+                    spanGaps: true
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -228,7 +265,7 @@ function createChart() {
                 },
                 title: {
                     display: true,
-                    text: '0x2CF - Reply Thermal State - HUR 随时间变化',
+                    text: '0x2CF - Anode vs Casing Heat HUR (%)',
                     font: {
                         size: 16,
                         weight: 'bold'
@@ -281,7 +318,7 @@ function createChart() {
 
 // 更新图表类型
 function updateChart() {
-    if (hurDataPoints.length > 0) {
+    if (anodeDataPoints.length > 0 || casingDataPoints.length > 0) {
         createChart();
     }
 }
