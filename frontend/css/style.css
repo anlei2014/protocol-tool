@@ -84,19 +84,61 @@ body {
     transform: translateX(5px);
 }
 
-/* 表格样式 - 修改表头颜色 */
-.table th {
-    position: relative;
-    background-color: #6022A6 !important;
+/* 统一面板头部样式 (侧边栏和表格表头) */
+.unified-panel-header {
+    background: #4a1a82 !important;
+    background: linear-gradient(135deg, #5b219c 0%, #3b1567 100%) !important;
     color: white !important;
-    border-bottom: none !important;
+    height: 32px !important;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    font-size: 0.8rem;
     font-weight: 600;
-    border-right: 1px solid #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.table th.resizing .resize-handle {
-    background: #fff;
-    border-right: 1px solid #fff;
+/* 侧边栏头部覆盖 */
+#sidebarColumn .sidebar-header {
+    flex-shrink: 0;
+}
+
+/* 表格头部覆盖 */
+.table thead th {
+    position: relative;
+    /* 必须，为了 resize-handle */
+    background: transparent !important;
+    color: white !important;
+    border: none !important;
+    height: 32px;
+    vertical-align: middle;
+    padding: 0 0.75rem !important;
+    white-space: nowrap;
+    font-weight: 600;
+    box-shadow: none !important;
+}
+
+/* 列宽调整手柄样式 */
+.resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    background: rgba(255, 255, 255, 0.1);
+    transition: background 0.2s ease;
+    z-index: 10;
+}
+
+.resize-handle:hover,
+th.resizing .resize-handle {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.table thead {
+    background: linear-gradient(135deg, #5b219c 0%, #3b1567 100%);
 }
 
 /* 树形结构样式 */
@@ -340,23 +382,158 @@ body {
     }
 }
 
-/* 导航栏样式 - 确保层级 */
-.navbar {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border-radius: 12px;
-    padding: 0.25rem 1rem;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    position: relative;
+/* 顶部工具栏容器 - 整合页眉和导航栏 */
+.top-bar-container {
+    background: #4a1a82;
+    background: linear-gradient(135deg, #5b219c 0%, #3b1567 100%);
+    padding: 0.4rem 1rem;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
     z-index: 2000;
+}
+
+/* 顶部栏内部布局 */
+.top-bar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* 页面标题样式优化 */
+.page-title-box h5 {
+    color: white;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* 返回按钮高级样式 */
+.btn-back {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white !important;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateX(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 导航菜单容器 */
+.nav-menu-box {
+    flex-shrink: 0;
+}
+
+/* 导航栏样式优化 - 移除背景改用透明 */
+.navbar {
+    background: transparent !important;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
     font-size: 14px;
 }
 
-/* 导航链接样式 - 更紧凑的上下间距 */
 .navbar .nav-link {
-    padding: 0.25rem 0.75rem !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    padding: 0.5rem 0.75rem !important;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.navbar .nav-link:hover {
+    color: white !important;
+}
+
+.navbar .dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.5rem;
+    margin-top: 10px;
+}
+
+/* 右侧工具区域 */
+.top-tools-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* 搜索框高级样式 */
+.search-box-wrapper {
+    position: relative;
+    width: 220px;
+}
+
+.search-box-wrapper .form-control {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding-left: 2.2rem;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.search-box-wrapper .form-control:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+    width: 280px;
+}
+
+.search-box-wrapper .bi-search {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+}
+
+.search-box-wrapper .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* 标签样式优化 */
+.badge-premium {
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.badge-premium.bg-info-glass {
+    background: rgba(13, 202, 240, 0.15);
+    border-color: rgba(13, 202, 240, 0.2);
+    color: #e0faff;
+}
+
+.badge-premium.bg-secondary-glass {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 992px) {
@@ -411,62 +588,51 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* 悬停效果 - 增强 */
-.table th:hover .resize-handle {
-    opacity: 1;
-    background: linear-gradient(to right,
-            rgba(255, 255, 255, 0.1),
-            rgba(255, 255, 255, 0.4),
-            rgba(255, 255, 255, 0.1));
-}
-
-.table th:hover .resize-handle::before {
-    opacity: 1;
-}
-
-/* 调整状态 - 高亮效果 */
-.table th.resizing .resize-handle {
-    opacity: 1;
-    width: 6px;
-    background: linear-gradient(to right,
-            rgba(255, 255, 255, 0.2),
-            rgba(255, 255, 255, 0.8),
-            rgba(255, 255, 255, 0.2));
-    box-shadow:
-        0 0 10px rgba(255, 255, 255, 0.5),
-        0 0 20px rgba(255, 255, 255, 0.3);
-}
-
-.table th.resizing .resize-handle::before {
-    opacity: 0;
-}
 
 /* 侧边栏调整手柄 */
 .sidebar-resizer {
-    width: 6px;
-    background: linear-gradient(to right, #e9ecef, #dee2e6, #e9ecef);
+    width: 4px;
+    background: rgba(74, 26, 130, 0.1);
+    /* 使用柔和的紫色透明 */
     cursor: col-resize;
     flex-shrink: 0;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 100;
 }
 
-.sidebar-resizer:hover {
-    background: linear-gradient(to right, #6c757d, #495057, #6c757d);
-}
-
+.sidebar-resizer:hover,
 .sidebar-resizer.resizing {
-    background: linear-gradient(to right, #0d6efd, #0a58ca, #0d6efd);
+    background: rgba(74, 26, 130, 0.4);
+    box-shadow: 0 0 15px rgba(74, 26, 130, 0.2);
 }
 
 /* 侧边栏容器 - 固定宽度，不被flex布局压缩 */
 #sidebarColumn {
     flex-shrink: 0 !important;
     flex-grow: 0 !important;
+    background: white;
+}
+
+/* 统一视图区块布局 */
+.main-content-layout {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* 字体大小调整 */
 .table {
     font-size: 13px;
+    margin-bottom: 0;
+}
+
+.table td {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.5rem 0.75rem !important;
 }
 
 /* 隐藏表格区域的水平滚动条 */

@@ -16,133 +16,123 @@
 
 <body>
     <div class="d-flex flex-column vh-100">
-        <!-- Header - 紧凑设计 -->
-        <header class="text-center text-white py-2 flex-shrink-0">
-            <div class="container-fluid d-flex justify-content-between align-items-center">
-                <a href="/" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-arrow-left me-1"></i>返回
-                </a>
-                <div>
-                    <h5 class="fw-bold mb-0">数据预览 <small class="text-white-50" id="pageSubtitle"></small></h5>
+        <!-- Unified Top Bar -->
+        <div class="top-bar-container flex-shrink-0">
+            <div class="top-bar-content">
+                <!-- Left: Back Button & Title -->
+                <div class="d-flex align-items-center gap-3">
+                    <a href="/" class="btn-back">
+                        <i class="bi bi-arrow-left me-1"></i>返回主页
+                    </a>
+                    <div class="page-title-box">
+                        <h5 class="mb-0">数据预览 <small class="text-white-50 ms-1" id="pageSubtitle"
+                                style="font-size: 0.75rem;"></small></h5>
+                    </div>
                 </div>
-                <div style="width: 80px;"></div>
-            </div>
-        </header>
 
-        <!-- 功能菜单栏 -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm flex-shrink-0 mx-2 mb-2">
-            <div class="container-fluid">
-                <ul class="navbar-nav me-auto mb-0">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-folder me-1"></i>File
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="exportData('csv')"><i
-                                        class="bi bi-file-earmark-spreadsheet me-2"></i>导出为 CSV</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="exportData('json')"><i
-                                        class="bi bi-file-earmark-code me-2"></i>导出为 JSON</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="/"><i class="bi bi-house me-2"></i>返回主页</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-graph-up me-1"></i>Graphs
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="showGraph('timeline')"><i
-                                        class="bi bi-bar-chart-line me-2"></i>时序图</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="showGraph('distribution')"><i
-                                        class="bi bi-pie-chart me-2"></i>分布图</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="showGraph('statistics')"><i
-                                        class="bi bi-graph-up-arrow me-2"></i>统计图</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-question-circle me-1"></i>Help
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="showHelp()"><i
-                                        class="bi bi-book me-2"></i>使用帮助</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="showAbout()"><i
-                                        class="bi bi-info-circle me-2"></i>关于</a></li>
-                        </ul>
-                    </li>
-                </ul>
+                <!-- Center: Navigation Menu -->
+                <nav class="navbar navbar-expand-lg flex-grow-1">
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-folder me-1"></i>文件
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportData('csv')"><i
+                                            class="bi bi-file-earmark-spreadsheet me-2"></i>导出为 CSV</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportData('json')"><i
+                                            class="bi bi-file-earmark-code me-2"></i>导出为 JSON</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="/"><i class="bi bi-house me-2"></i>返回主页</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-graph-up me-1"></i>图表分析
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="showGraph('timeline')"><i
+                                            class="bi bi-bar-chart-line me-2"></i>时序图</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showGraph('distribution')"><i
+                                            class="bi bi-pie-chart me-2"></i>分布图</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showGraph('statistics')"><i
+                                            class="bi bi-graph-up-arrow me-2"></i>统计图</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-question-circle me-1"></i>帮助
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="showHelp()"><i
+                                            class="bi bi-book me-2"></i>使用帮助</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="showAbout()"><i
+                                            class="bi bi-info-circle me-2"></i>关于</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
 
-                <!-- 右侧工具栏 -->
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-info me-2" id="fileName">加载中...</span>
-                    <span class="badge bg-secondary me-2" id="previewInfo">正在加载...</span>
-                    <div class="input-group input-group-sm" style="width: 200px;">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" placeholder="搜索..." id="searchInput"
+                <!-- Right: Tools, Badges & Search -->
+                <div class="top-tools-box">
+                    <span class="badge-premium bg-info-glass" id="fileName">加载中...</span>
+                    <span class="badge-premium bg-secondary-glass" id="previewInfo">正在加载...</span>
+                    <div class="search-box-wrapper">
+                        <i class="bi bi-search"></i>
+                        <input type="text" class="form-control" placeholder="搜索消息..." id="searchInput"
                             onkeyup="searchMessages()">
                     </div>
                 </div>
             </div>
-        </nav>
+        </div>
 
-        <!-- 数据预览区域 - 全屏自适应 -->
-        <div class="container-fluid flex-grow-1 overflow-hidden mb-2 px-2">
-            <div class="row h-100 g-2">
-                <div class="col-12 h-100">
-                    <div class="card shadow h-100 border-0">
-                        <div class="card-body p-0 h-100">
-                            <div class="d-flex h-100" id="splitContainer">
-                                <!-- 左侧：消息列表 -->
-                                <div class="h-100 border-end d-flex flex-column" id="sidebarColumn"
-                                    style="width: 350px; min-width: 150px; max-width: 500px;">
-                                    <div class="card-header py-2 border-bottom"
-                                        style="background: linear-gradient(135deg, #6022A6 0%, #3E166E 100%);">
-                                        <h6 class="mb-0 small fw-bold text-white" id="sidebarTitle">Available CAN
-                                            messages</h6>
-                                    </div>
-                                    <div class="flex-grow-1 overflow-auto" id="messageList">
-                                        <div class="text-center py-4">
-                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                                <span class="visually-hidden">加载中...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 可拖拽分隔条 -->
-                                <div class="sidebar-resizer" id="sidebarResizer"></div>
-
-                                <!-- 右侧：统一表格视图 -->
-                                <div class="flex-grow-1 h-100 d-flex flex-column" id="tableColumn">
-                                    <div class="table-responsive flex-grow-1">
-                                        <table class="table table-sm table-striped table-hover mb-0" id="dataTable">
-                                            <thead class="table-dark sticky-top" id="tableHead">
-                                                <tr>
-                                                    <th colspan="4" class="text-center">
-                                                        <div class="spinner-border spinner-border-sm text-light"
-                                                            role="status">
-                                                            <span class="visually-hidden">加载中...</span>
-                                                        </div>
-                                                        <span class="ms-2">正在加载数据...</span>
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="tableBody"></tbody>
-                                        </table>
-                                    </div>
-                                    <!-- Pagination Controls -->
-                                    <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light"
-                                        id="paginationContainer" style="display: none;">
-                                        <div class="pagination-info small text-muted" id="paginationInfo"></div>
-                                        <nav aria-label="Page navigation">
-                                            <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
-                                        </nav>
-                                    </div>
-                                </div>
+        <!-- Main Content Area -->
+        <div class="main-content-layout flex-grow-1">
+            <div class="d-flex w-100 h-100" id="splitContainer">
+                <!-- Left: Sidebar -->
+                <div class="h-100 border-end d-flex flex-column" id="sidebarColumn"
+                    style="width: 350px; min-width: 150px; max-width: 500px;">
+                    <div class="unified-panel-header sidebar-header" id="sidebarTitle">
+                        Available CAN messages
+                    </div>
+                    <div class="flex-grow-1 overflow-auto" id="messageList">
+                        <div class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Resizer -->
+                <div class="sidebar-resizer" id="sidebarResizer"></div>
+
+                <!-- Right: Data Table Area -->
+                <div class="flex-grow-1 h-100 d-flex flex-column" id="tableColumn">
+                    <div class="table-responsive flex-grow-1">
+                        <table class="table table-sm table-hover mb-0" id="dataTable">
+                            <thead class="sticky-top" id="tableHead">
+                                <tr>
+                                    <th colspan="6" class="text-center">
+                                        <div class="spinner-border spinner-border-sm text-light" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                        <span class="ms-2">正在加载数据...</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light"
+                        id="paginationContainer" style="display: none;">
+                        <div class="pagination-info small text-muted" id="paginationInfo"></div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+                        </nav>
                     </div>
                 </div>
             </div>
