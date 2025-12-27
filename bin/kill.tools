@@ -9,6 +9,10 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 PID_FILE="$ROOT_DIR/.protocol-tool.pid"
 BINARY_NAME="csv-parser"
 
+# 自动设置 bin 目录下所有脚本的执行权限
+chmod +x "$SCRIPT_DIR"/*.tools 2>/dev/null
+
+
 # 函数：杀死进程及其子进程
 kill_process_tree() {
     local pid=$1
@@ -23,27 +27,27 @@ kill_process_tree() {
 
 # 检查 PID 文件是否存在
 if [ ! -f "$PID_FILE" ]; then
-    echo "未找到 PID 文件，尝试按进程名查找..."
+    echo "PID file not found, searching by process name..."
     # 尝试按进程名查找并杀死
     PIDS=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
     if [ -n "$PIDS" ]; then
-        echo "找到相关进程: $PIDS"
+        echo "Found related processes: $PIDS"
         for pid in $PIDS; do
-            echo "正在停止进程 $pid..."
+            echo "Stopping process $pid..."
             kill "$pid" 2>/dev/null
         done
         sleep 1
         # 检查是否还有残留进程
         REMAINING=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
         if [ -n "$REMAINING" ]; then
-            echo "强制终止残留进程..."
+            echo "Force killing remaining processes..."
             for pid in $REMAINING; do
                 kill -9 "$pid" 2>/dev/null
             done
         fi
-        echo "✓ 服务已停止"
+        echo "✓ Service stopped"
     else
-        echo "未找到运行中的服务"
+        echo "No running service found"
     fi
     exit 0
 fi
@@ -53,11 +57,11 @@ PID=$(cat "$PID_FILE")
 
 # 检查进程是否存在
 if ! ps -p "$PID" > /dev/null 2>&1; then
-    echo "服务进程 (PID: $PID) 已不存在"
+    echo "Service process (PID: $PID) no longer exists"
     # 同时检查是否有按进程名运行的实例
     PIDS=$(pgrep -f "$BINARY_NAME" 2>/dev/null)
     if [ -n "$PIDS" ]; then
-        echo "但发现其他相关进程: $PIDS，正在停止..."
+        echo "Found other related processes: $PIDS, stopping..."
         for pid in $PIDS; do
             kill "$pid" 2>/dev/null
         done
@@ -66,7 +70,7 @@ if ! ps -p "$PID" > /dev/null 2>&1; then
     exit 0
 fi
 
-echo "正在停止 Protocol Tool 服务 (PID: $PID)..."
+echo "Stopping Protocol Tool service (PID: $PID)..."
 
 # 发送 SIGTERM 信号优雅关闭（包括子进程）
 kill_process_tree "$PID"
@@ -74,7 +78,7 @@ kill_process_tree "$PID"
 # 等待进程结束（最多等待 10 秒）
 for i in {1..10}; do
     if ! ps -p "$PID" > /dev/null 2>&1; then
-        echo "✓ 服务已成功停止"
+        echo "✓ Service stopped successfully"
         rm -f "$PID_FILE"
         exit 0
     fi
@@ -82,7 +86,7 @@ for i in {1..10}; do
 done
 
 # 如果优雅关闭失败，强制终止
-echo "进程未响应，正在强制终止..."
+echo "Process not responding, force killing..."
 kill -9 "$PID" 2>/dev/null
 
 # 同时强制杀死可能残留的相关进程
@@ -91,10 +95,10 @@ pkill -9 -f "$BINARY_NAME" 2>/dev/null
 sleep 1
 
 if ! ps -p "$PID" > /dev/null 2>&1; then
-    echo "✓ 服务已强制停止"
+    echo "✓ Service force stopped"
     rm -f "$PID_FILE"
 else
-    echo "✗ 无法停止服务，请手动处理 (PID: $PID)"
-    echo "  尝试: kill -9 $PID"
+    echo "✗ Failed to stop service, please handle manually (PID: $PID)"
+    echo "  Try: kill -9 $PID"
     exit 1
 fi

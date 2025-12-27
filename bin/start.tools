@@ -12,12 +12,16 @@ PID_FILE="$ROOT_DIR/.protocol-tool.pid"
 LOG_FILE="$ROOT_DIR/log/server.log"
 BINARY_NAME="csv-parser"
 
+# 自动设置 bin 目录下所有脚本的执行权限
+chmod +x "$SCRIPT_DIR"/*.tools 2>/dev/null
+
+
 # 检查是否已经在运行
 if [ -f "$PID_FILE" ]; then
     OLD_PID=$(cat "$PID_FILE")
     if ps -p "$OLD_PID" > /dev/null 2>&1; then
-        echo "服务已经在运行中 (PID: $OLD_PID)"
-        echo "如需重启，请先运行 ./kill.tools"
+        echo "Service is already running (PID: $OLD_PID)"
+        echo "To restart, please run ./kill.tools first"
         exit 1
     else
         # PID 文件存在但进程不存在，清理旧的 PID 文件
@@ -31,25 +35,25 @@ mkdir -p "$BUILD_DIR"
 
 # 切换到 backend 目录进行编译
 cd "$BACKEND_DIR" || {
-    echo "错误: 无法进入 backend 目录: $BACKEND_DIR"
+    echo "Error: Cannot enter backend directory: $BACKEND_DIR"
     exit 1
 }
 
-echo "正在启动 Protocol Tool 服务..."
-echo "项目根目录: $ROOT_DIR"
+echo "Starting Protocol Tool service..."
+echo "Project root: $ROOT_DIR"
 
 # 编译 Go 程序到 build 目录
-echo "正在编译..."
+echo "Compiling..."
 go build -o "$BUILD_DIR/$BINARY_NAME" . || {
-    echo "错误: 编译失败"
+    echo "Error: Build failed"
     exit 1
 }
 
-echo "编译完成: $BUILD_DIR/$BINARY_NAME"
+echo "Build completed: $BUILD_DIR/$BINARY_NAME"
 
 # 切换到 build 目录运行（确保工作目录正确）
 cd "$BUILD_DIR" || {
-    echo "错误: 无法进入 build 目录: $BUILD_DIR"
+    echo "Error: Cannot enter build directory: $BUILD_DIR"
     exit 1
 }
 
@@ -64,14 +68,14 @@ echo $PID > "$PID_FILE"
 sleep 1
 
 if ps -p "$PID" > /dev/null 2>&1; then
-    echo "✓ 服务启动成功!"
+    echo "✓ Service started successfully!"
     echo "  PID: $PID"
-    echo "  日志文件: $LOG_FILE"
-    echo "  访问地址: http://localhost:8080"
+    echo "  Log file: $LOG_FILE"
+    echo "  URL: http://localhost:8080"
     echo ""
-    echo "使用 ./kill.tools 停止服务"
+    echo "Use ./kill.tools to stop the service"
 else
-    echo "✗ 服务启动失败，请检查日志文件: $LOG_FILE"
+    echo "✗ Service failed to start, please check log file: $LOG_FILE"
     rm -f "$PID_FILE"
     exit 1
 fi

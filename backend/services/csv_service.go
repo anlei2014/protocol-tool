@@ -314,8 +314,8 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 		if mergedSourceFiles[filename] {
 			continue
 		}
-		// 2. 通过文件名中的 _MERGED_ 标记（防止合并信息丢失时源文件仍显示）
-		if strings.Contains(filename, "_MERGED_") {
+		// 2. 通过文件名中的标记（新格式 _M_ 或旧格式 _MERGED_）
+		if strings.Contains(filename, "_M_") || strings.Contains(filename, "_MERGED_") {
 			continue
 		}
 
@@ -377,8 +377,8 @@ func (s *CSVService) DeleteFile(filename string) error {
 	// 删除所有相关的缓存文件
 	s.DeleteCacheForFile(filename)
 
-	// 检查是否是合并文件
-	if strings.HasPrefix(filename, "merged_") {
+	// 检查是否是合并文件（支持新格式 m_ 和旧格式 merged_）
+	if strings.HasPrefix(filename, "m_") || strings.HasPrefix(filename, "merged_") {
 		// 获取合并文件信息
 		info, err := s.GetMergedFileInfo(filename)
 		if err == nil {
@@ -386,26 +386,124 @@ func (s *CSVService) DeleteFile(filename string) error {
 			for _, sourceFile := range info.SourceFiles {
 				sourcePath := filepath.Join(s.uploadDir, sourceFile)
 				if err := os.Remove(sourcePath); err != nil {
-					utils.Warn("删除源文件失败: %s, 错误: %v", sourceFile, err)
+					utils.Warn("Failed to delete source file: %s, error: %v", sourceFile, err)
 				} else {
-					utils.Info("已删除源文件: %s", sourceFile)
+					utils.Info("Deleted source file: %s", sourceFile)
 				}
 			}
+		} else {
+			// 合并信息文件不存在，尝试通过文件名模式匹配删除相关源文件
+			utils.Warn("Merged file info not found, trying pattern match cleanup")
+			s.cleanupOrphanedMergedFiles(filename)
 		}
 
 		// 删除合并文件信息
 		baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
 		mergedInfoPath := filepath.Join(s.getMergedInfoDir(), baseName+".json")
 		if err := os.Remove(mergedInfoPath); err != nil {
-			utils.Warn("删除合并文件信息失败: %v", err)
+			utils.Warn("Failed to delete merged file info: %v", err)
 		}
 
 		return nil // 合并文件不是真实文件，无需删除
 	}
 
+	// 检查是否是孤立的合并源文件（直接删除）
+	if strings.Contains(filename, "_M_") || strings.Contains(filename, "_MERGED_") {
+		filePath := filepath.Join(s.uploadDir, filename)
+		return os.Remove(filePath)
+	}
+
 	// 常规文件删除
 	filePath := filepath.Join(s.uploadDir, filename)
 	return os.Remove(filePath)
+}
+
+// cleanupOrphanedMergedFiles 清理孤立的合并源文件
+func (s *CSVService) cleanupOrphanedMergedFiles(mergedFilename string) {
+	// 从合并文件名中提取 mergedID
+	// 新格式: m_xxxxxxxx.csv
+	// 旧格式: merged_UUID_PROTOCOL_COUNT.csv
+	parts := strings.Split(mergedFilename, "_")
+	if len(parts) < 2 {
+		return
+	}
+	mergedID := parts[1] // 提取 ID
+
+	// 扫描 uploads 目录，删除包含此 mergedID 的所有源文件
+	entries, err := os.ReadDir(s.uploadDir)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		// 检查文件名是否包含 _M_mergedID 或 _MERGED_mergedID
+		if strings.Contains(entry.Name(), "_M_"+mergedID) || strings.Contains(entry.Name(), "_MERGED_"+mergedID) {
+			filePath := filepath.Join(s.uploadDir, entry.Name())
+			if err := os.Remove(filePath); err != nil {
+				utils.Warn("Failed to cleanup orphaned file: %s, error: %v", entry.Name(), err)
+			} else {
+				utils.Info("Cleaned up orphaned file: %s", entry.Name())
+			}
+		}
+	}
+}
+
+// CleanupAllOrphanedFiles 清理所有孤立的合并源文件和缓存
+func (s *CSVService) CleanupAllOrphanedFiles() (int, error) {
+	deletedCount := 0
+
+	// 1. 清理孤立的 MERGED 源文件
+	entries, err := os.ReadDir(s.uploadDir)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		// 删除所有合并源文件（新格式 _M_ 和旧格式 _MERGED_）
+		if strings.Contains(entry.Name(), "_M_") || strings.Contains(entry.Name(), "_MERGED_") {
+			filePath := filepath.Join(s.uploadDir, entry.Name())
+			if err := os.Remove(filePath); err == nil {
+				utils.Info("Cleaned orphaned source file: %s", entry.Name())
+				deletedCount++
+			}
+		}
+	}
+
+	// 2. 清理 merged 信息目录
+	mergedDir := s.getMergedInfoDir()
+	if entries, err := os.ReadDir(mergedDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				filePath := filepath.Join(mergedDir, entry.Name())
+				if err := os.Remove(filePath); err == nil {
+					utils.Info("Cleaned merged info file: %s", entry.Name())
+					deletedCount++
+				}
+			}
+		}
+	}
+
+	// 3. 清理缓存目录
+	cacheDir := s.getCacheDir()
+	if entries, err := os.ReadDir(cacheDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				filePath := filepath.Join(cacheDir, entry.Name())
+				if err := os.Remove(filePath); err == nil {
+					utils.Info("Cleaned cache file: %s", entry.Name())
+					deletedCount++
+				}
+			}
+		}
+	}
+
+	return deletedCount, nil
 }
 
 // getCacheDir 获取缓存目录路径
@@ -510,8 +608,9 @@ type MergedFileInfo struct {
 
 // UploadMultipleFiles 处理多文件上传并创建合并记录
 func (s *CSVService) UploadMultipleFiles(files []*multipart.FileHeader, protocolType string) (*models.CSVFile, []string, error) {
-	// 生成合并文件的唯一ID
-	mergedID := uuid.New().String()
+	// 生成合并文件的唯一ID（使用更短的8位ID）
+	fullID := uuid.New().String()
+	mergedID := fullID[:8] // 只取前8位，足够唯一性
 	sourceFiles := make([]string, 0, len(files))
 	uploadedFilenames := make([]string, 0, len(files))
 	var totalSize int64 = 0
@@ -529,12 +628,11 @@ func (s *CSVService) UploadMultipleFiles(files []*multipart.FileHeader, protocol
 			return nil, nil, fmt.Errorf("failed to open file %s: %v", fileHeader.Filename, err)
 		}
 
-		// 为每个源文件生成唯一文件名
-		id := uuid.New().String()
+		// 为每个源文件生成唯一文件名（使用短ID）
+		id := uuid.New().String()[:8] // 只取前8位
 		ext := filepath.Ext(fileHeader.Filename)
-		baseName := strings.TrimSuffix(fileHeader.Filename, ext)
-		// 标记源文件属于哪个合并文件
-		newFilename := id + "_" + protocolType + "_MERGED_" + mergedID + "_" + baseName + ext
+		// 简化文件名格式: id_M_mergedID.csv (不包含原始文件名，通过mergedInfo记录)
+		newFilename := id + "_M_" + mergedID + ext
 		filePath := filepath.Join(s.uploadDir, newFilename)
 
 		// 创建目标文件
@@ -594,11 +692,11 @@ func (s *CSVService) UploadMultipleFiles(files []*multipart.FileHeader, protocol
 		SourceCount:   len(uploadedFilenames),
 	}
 
-	// 合并文件的虚拟文件名
-	mergedFilename := "merged_" + mergedID + "_" + protocolType + "_" + fmt.Sprintf("%d", len(files)) + ".csv"
+	// 合并文件的虚拟文件名（精简格式）
+	mergedFilename := "m_" + mergedID + ".csv"
 
 	// 保存合并信息到JSON文件
-	mergedInfoPath := filepath.Join(mergedInfoDir, "merged_"+mergedID+"_"+protocolType+"_"+fmt.Sprintf("%d", len(files))+".json")
+	mergedInfoPath := filepath.Join(mergedInfoDir, "m_"+mergedID+".json")
 	infoData, err := json.Marshal(mergedInfo)
 	if err == nil {
 		os.WriteFile(mergedInfoPath, infoData, 0644)

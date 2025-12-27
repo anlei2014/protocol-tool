@@ -537,8 +537,8 @@ function renderFilesList() {
     let html = pageFiles.map(file => {
         const fileProtocol = file.protocolType || 'COMMON';
         const protocolBadge = `<span class="badge ${getProtocolBadgeClass(fileProtocol)} ms-2">${fileProtocol}</span>`;
-        // 检查是否是合并文件
-        const isMergedFile = file.filename && file.filename.startsWith('merged_');
+        // 检查是否是合并文件（支持新格式 m_ 和旧格式 merged_）
+        const isMergedFile = file.filename && (file.filename.startsWith('m_') || file.filename.startsWith('merged_'));
         const mergedBadge = isMergedFile ? '<span class="badge bg-warning text-dark ms-2"><i class="bi bi-collection me-1"></i>合并</span>' : '';
         const fileIcon = isMergedFile ? 'bi-file-earmark-richtext' : 'bi-file-earmark-spreadsheet';
 

@@ -57,6 +57,7 @@ func main() {
 		api.GET("/files", csvHandler.GetFiles)
 		api.GET("/parse/:filename", csvHandler.ParseFile)
 		api.DELETE("/file/:filename", csvHandler.DeleteFile)
+		api.POST("/cleanup", csvHandler.CleanupOrphanedFiles) // 清理孤立文件
 	}
 
 	// 根路径直接提供前端index.html
