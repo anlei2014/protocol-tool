@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -127,18 +128,23 @@ func (s *CSVService) ParseFileWithLog(filename string, protocol string, logKey s
 	// 使用bufio.Scanner逐行读取，对每行独立解析CSV
 	// 这样格式错误的行不会影响后续有效行的解析
 	scanner := bufio.NewScanner(file)
-	// 设置更大的缓冲区以处理较长的行
-	const maxScanTokenSize = 1024 * 1024 // 1MB
-	buf := make([]byte, maxScanTokenSize)
+	// 设置更大的缓冲区以处理较长的行（32G内存服务器可用更大缓冲）
+	const maxScanTokenSize = 4 * 1024 * 1024 // 4MB - 增大缓冲区
+	buf := make([]byte, 64*1024)             // 初始64KB缓冲
 	scanner.Buffer(buf, maxScanTokenSize)
 
 	var headers []string
-	var rows [][]string
+	// 根据文件大小预估行数，优化内存分配
+	estimatedLines := int(fileInfo.Size() / 200) // 假设平均每行200字节
+	if estimatedLines < 1000 {
+		estimatedLines = 1000
+	}
+	rows := make([][]string, 0, estimatedLines)
 	skippedRows := 0
 	lineNumber := 0
 
 	if logKey != "" {
-		utils.FileLogInfo(logKey, "开始逐行读取CSV数据（增强容错模式）...")
+		utils.FileLogInfo(logKey, "开始逐行读取CSV数据（高性能模式，预估 %d 行）...", estimatedLines)
 	}
 
 	// 逐行读取，每行独立解析
@@ -230,13 +236,91 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 		return nil, fmt.Errorf("failed to read upload directory: %v", err)
 	}
 
+	// 收集属于合并组的源文件（需要过滤掉）
+	mergedSourceFiles := make(map[string]bool)
+
+	// 首先扫描merged信息目录，获取所有合并文件信息
+	mergedInfoDir := s.getMergedInfoDir()
+	if mergedEntries, err := os.ReadDir(mergedInfoDir); err == nil {
+		for _, entry := range mergedEntries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+				continue
+			}
+
+			infoPath := filepath.Join(mergedInfoDir, entry.Name())
+			data, err := os.ReadFile(infoPath)
+			if err != nil {
+				continue
+			}
+
+			var info MergedFileInfo
+			if err := json.Unmarshal(data, &info); err != nil {
+				continue
+			}
+
+			// 标记所有源文件
+			for _, sourceFile := range info.SourceFiles {
+				mergedSourceFiles[sourceFile] = true
+			}
+
+			// 计算合并文件的虚拟信息
+			var totalSize int64 = 0
+			var totalRows int = 0
+			var columnCount int = 0
+			var latestTime time.Time
+
+			for _, sourceFile := range info.SourceFiles {
+				sourcePath := filepath.Join(s.uploadDir, sourceFile)
+				if fileInfo, err := os.Stat(sourcePath); err == nil {
+					totalSize += fileInfo.Size()
+					if fileInfo.ModTime().After(latestTime) {
+						latestTime = fileInfo.ModTime()
+					}
+					if rows, cols, err := s.validateCSV(sourcePath); err == nil {
+						totalRows += rows
+						if cols > columnCount {
+							columnCount = cols
+						}
+					}
+				}
+			}
+
+			// 创建合并文件的虚拟记录
+			mergedFilename := strings.TrimSuffix(entry.Name(), ".json") + ".csv"
+			mergedFile := &models.CSVFile{
+				ID:           strings.TrimSuffix(entry.Name(), ".json"),
+				Filename:     mergedFilename,
+				OriginalName: fmt.Sprintf("合并文件 (%d个)", info.SourceCount),
+				Size:         totalSize,
+				UploadTime:   latestTime,
+				RowCount:     totalRows,
+				ColumnCount:  columnCount,
+				ProtocolType: info.ProtocolType,
+				SourceFiles:  info.OriginalNames, // 原始文件名列表
+			}
+			files = append(files, mergedFile)
+		}
+	}
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 
+		filename := entry.Name()
+
+		// 跳过属于合并组的源文件（两种方式检测）
+		// 1. 通过合并信息文件中记录的源文件列表
+		if mergedSourceFiles[filename] {
+			continue
+		}
+		// 2. 通过文件名中的 _MERGED_ 标记（防止合并信息丢失时源文件仍显示）
+		if strings.Contains(filename, "_MERGED_") {
+			continue
+		}
+
 		// 获取文件信息
-		filePath := filepath.Join(s.uploadDir, entry.Name())
+		filePath := filepath.Join(s.uploadDir, filename)
 		info, err := entry.Info()
 		if err != nil {
 			continue
@@ -249,11 +333,11 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 		}
 
 		// 解析文件名: UUID_PROTOCOL_原始文件名.csv 或 UUID_原始文件名.csv（旧格式）
-		originalName := entry.Name()
+		originalName := filename
 		protocolType := "" // 默认空，表示旧格式文件
 
 		// 按 "_" 分割文件名
-		parts := strings.SplitN(entry.Name(), "_", 3)
+		parts := strings.SplitN(filename, "_", 3)
 		if len(parts) >= 3 {
 			// 新格式：UUID_PROTOCOL_原始文件名.csv
 			protocolType = parts[1]
@@ -267,8 +351,8 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 		}
 
 		file := &models.CSVFile{
-			ID:           strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name())),
-			Filename:     entry.Name(),
+			ID:           strings.TrimSuffix(filename, filepath.Ext(filename)),
+			Filename:     filename,
 			OriginalName: originalName,
 			Size:         info.Size(),
 			UploadTime:   info.ModTime(),
@@ -290,11 +374,37 @@ func (s *CSVService) GetFiles() ([]*models.CSVFile, error) {
 
 // DeleteFile 删除文件及其缓存
 func (s *CSVService) DeleteFile(filename string) error {
-	filePath := filepath.Join(s.uploadDir, filename)
-
 	// 删除所有相关的缓存文件
 	s.DeleteCacheForFile(filename)
 
+	// 检查是否是合并文件
+	if strings.HasPrefix(filename, "merged_") {
+		// 获取合并文件信息
+		info, err := s.GetMergedFileInfo(filename)
+		if err == nil {
+			// 删除所有源文件
+			for _, sourceFile := range info.SourceFiles {
+				sourcePath := filepath.Join(s.uploadDir, sourceFile)
+				if err := os.Remove(sourcePath); err != nil {
+					utils.Warn("删除源文件失败: %s, 错误: %v", sourceFile, err)
+				} else {
+					utils.Info("已删除源文件: %s", sourceFile)
+				}
+			}
+		}
+
+		// 删除合并文件信息
+		baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
+		mergedInfoPath := filepath.Join(s.getMergedInfoDir(), baseName+".json")
+		if err := os.Remove(mergedInfoPath); err != nil {
+			utils.Warn("删除合并文件信息失败: %v", err)
+		}
+
+		return nil // 合并文件不是真实文件，无需删除
+	}
+
+	// 常规文件删除
+	filePath := filepath.Join(s.uploadDir, filename)
 	return os.Remove(filePath)
 }
 
@@ -376,6 +486,264 @@ func (s *CSVService) DeleteCacheForFile(filename string) {
 			utils.Info("已删除缓存文件: %s", cachePath)
 		}
 	}
+
+	// 如果是合并文件，还需要删除关联的源文件信息
+	mergedInfoPath := filepath.Join(s.getMergedInfoDir(), baseName+".json")
+	if err := os.Remove(mergedInfoPath); err == nil {
+		utils.Info("已删除合并文件信息: %s", mergedInfoPath)
+	}
+}
+
+// getMergedInfoDir 获取合并文件信息目录
+func (s *CSVService) getMergedInfoDir() string {
+	return filepath.Join(s.uploadDir, "merged")
+}
+
+// MergedFileInfo 合并文件的源文件信息
+type MergedFileInfo struct {
+	SourceFiles   []string `json:"sourceFiles"`   // 上传后的文件名
+	OriginalNames []string `json:"originalNames"` // 原始文件名
+	ProtocolType  string   `json:"protocolType"`
+	MergedAt      string   `json:"mergedAt"`
+	SourceCount   int      `json:"sourceCount"`
+}
+
+// UploadMultipleFiles 处理多文件上传并创建合并记录
+func (s *CSVService) UploadMultipleFiles(files []*multipart.FileHeader, protocolType string) (*models.CSVFile, []string, error) {
+	// 生成合并文件的唯一ID
+	mergedID := uuid.New().String()
+	sourceFiles := make([]string, 0, len(files))
+	uploadedFilenames := make([]string, 0, len(files))
+	var totalSize int64 = 0
+	var totalRows int = 0
+	var columnCount int = 0
+
+	// 上传所有源文件
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			// 清理已上传的文件
+			for _, fname := range uploadedFilenames {
+				os.Remove(filepath.Join(s.uploadDir, fname))
+			}
+			return nil, nil, fmt.Errorf("failed to open file %s: %v", fileHeader.Filename, err)
+		}
+
+		// 为每个源文件生成唯一文件名
+		id := uuid.New().String()
+		ext := filepath.Ext(fileHeader.Filename)
+		baseName := strings.TrimSuffix(fileHeader.Filename, ext)
+		// 标记源文件属于哪个合并文件
+		newFilename := id + "_" + protocolType + "_MERGED_" + mergedID + "_" + baseName + ext
+		filePath := filepath.Join(s.uploadDir, newFilename)
+
+		// 创建目标文件
+		dst, err := os.Create(filePath)
+		if err != nil {
+			file.Close()
+			for _, fname := range uploadedFilenames {
+				os.Remove(filepath.Join(s.uploadDir, fname))
+			}
+			return nil, nil, fmt.Errorf("failed to create file %s: %v", fileHeader.Filename, err)
+		}
+
+		// 复制文件内容
+		size, err := io.Copy(dst, file)
+		dst.Close()
+		file.Close()
+
+		if err != nil {
+			os.Remove(filePath)
+			for _, fname := range uploadedFilenames {
+				os.Remove(filepath.Join(s.uploadDir, fname))
+			}
+			return nil, nil, fmt.Errorf("failed to save file %s: %v", fileHeader.Filename, err)
+		}
+
+		// 验证CSV格式
+		rowCount, colCount, err := s.validateCSV(filePath)
+		if err != nil {
+			os.Remove(filePath)
+			for _, fname := range uploadedFilenames {
+				os.Remove(filepath.Join(s.uploadDir, fname))
+			}
+			return nil, nil, fmt.Errorf("invalid CSV file %s: %v", fileHeader.Filename, err)
+		}
+
+		sourceFiles = append(sourceFiles, fileHeader.Filename)
+		uploadedFilenames = append(uploadedFilenames, newFilename)
+		totalSize += size
+		totalRows += rowCount
+		if colCount > columnCount {
+			columnCount = colCount
+		}
+	}
+
+	// 创建合并文件信息目录
+	mergedInfoDir := s.getMergedInfoDir()
+	if err := os.MkdirAll(mergedInfoDir, 0755); err != nil {
+		utils.Warn("创建合并文件信息目录失败: %v", err)
+	}
+
+	// 保存合并文件信息
+	mergedInfo := MergedFileInfo{
+		SourceFiles:   uploadedFilenames,
+		OriginalNames: sourceFiles, // 原始文件名
+		ProtocolType:  protocolType,
+		MergedAt:      time.Now().Format(time.RFC3339),
+		SourceCount:   len(uploadedFilenames),
+	}
+
+	// 合并文件的虚拟文件名
+	mergedFilename := "merged_" + mergedID + "_" + protocolType + "_" + fmt.Sprintf("%d", len(files)) + ".csv"
+
+	// 保存合并信息到JSON文件
+	mergedInfoPath := filepath.Join(mergedInfoDir, "merged_"+mergedID+"_"+protocolType+"_"+fmt.Sprintf("%d", len(files))+".json")
+	infoData, err := json.Marshal(mergedInfo)
+	if err == nil {
+		os.WriteFile(mergedInfoPath, infoData, 0644)
+	}
+
+	// 创建合并文件记录（这是一个虚拟记录，不对应实际的合并文件）
+	mergedFile := &models.CSVFile{
+		ID:           mergedID,
+		Filename:     mergedFilename,
+		OriginalName: fmt.Sprintf("合并文件 (%d个)", len(files)),
+		Size:         totalSize,
+		UploadTime:   time.Now(),
+		RowCount:     totalRows,
+		ColumnCount:  columnCount,
+		ProtocolType: protocolType,
+	}
+
+	return mergedFile, sourceFiles, nil
+}
+
+// GetMergedFileInfo 获取合并文件的源文件信息
+func (s *CSVService) GetMergedFileInfo(mergedFilename string) (*MergedFileInfo, error) {
+	baseName := strings.TrimSuffix(mergedFilename, filepath.Ext(mergedFilename))
+	mergedInfoPath := filepath.Join(s.getMergedInfoDir(), baseName+".json")
+
+	data, err := os.ReadFile(mergedInfoPath)
+	if err != nil {
+		return nil, fmt.Errorf("合并文件信息不存在: %v", err)
+	}
+
+	var info MergedFileInfo
+	if err := json.Unmarshal(data, &info); err != nil {
+		return nil, fmt.Errorf("解析合并文件信息失败: %v", err)
+	}
+
+	return &info, nil
+}
+
+// ParseMergedFiles 解析合并文件（将多个源文件的数据合并）- 并行优化版
+func (s *CSVService) ParseMergedFiles(mergedFilename string, protocol string, logKey string) (*models.CSVData, error) {
+	// 获取合并文件信息
+	info, err := s.GetMergedFileInfo(mergedFilename)
+	if err != nil {
+		return nil, err
+	}
+
+	fileCount := len(info.SourceFiles)
+	if logKey != "" {
+		utils.FileLogInfo(logKey, "开始并行解析合并文件: %s, 包含 %d 个源文件", mergedFilename, fileCount)
+	}
+
+	// 使用并行解析提高性能
+	type parseResult struct {
+		index   int
+		headers []string
+		rows    [][]string
+		err     error
+	}
+
+	results := make(chan parseResult, fileCount)
+
+	// 并行解析所有源文件
+	for i, sourceFilename := range info.SourceFiles {
+		go func(idx int, filename string) {
+			data, err := s.ParseFileWithLog(filename, protocol, "")
+			if err != nil {
+				results <- parseResult{index: idx, err: err}
+				return
+			}
+			results <- parseResult{index: idx, headers: data.Headers, rows: data.Rows, err: nil}
+		}(i, sourceFilename)
+	}
+
+	// 收集结果
+	parsedResults := make([]parseResult, fileCount)
+	for i := 0; i < fileCount; i++ {
+		result := <-results
+		parsedResults[result.index] = result
+	}
+	close(results)
+
+	// 合并数据
+	var headers []string
+	var allRows [][]string
+
+	// 预估总行数以优化内存分配
+	estimatedRows := 0
+	for _, result := range parsedResults {
+		if result.err == nil {
+			estimatedRows += len(result.rows)
+		}
+	}
+	allRows = make([][]string, 0, estimatedRows)
+
+	for i, result := range parsedResults {
+		if result.err != nil {
+			if logKey != "" {
+				utils.FileLogWarn(logKey, "解析源文件 %d 失败: %v", i+1, result.err)
+			}
+			continue
+		}
+
+		// 使用第一个成功的文件的headers
+		if len(headers) == 0 {
+			headers = result.headers
+		}
+
+		// 合并所有行
+		allRows = append(allRows, result.rows...)
+
+		if logKey != "" {
+			utils.FileLogInfo(logKey, "源文件 %d 解析完成，获得 %d 行", i+1, len(result.rows))
+		}
+	}
+
+	if logKey != "" {
+		utils.FileLogInfo(logKey, "合并完成，共 %d 行数据", len(allRows))
+	}
+
+	// 按时间列排序 - 使用并行排序优化大数据集
+	timeIdx := -1
+	for i, h := range headers {
+		if strings.ToLower(h) == "time" {
+			timeIdx = i
+			break
+		}
+	}
+
+	if timeIdx >= 0 && len(allRows) > 0 {
+		if logKey != "" {
+			utils.FileLogInfo(logKey, "按Time列排序 %d 行数据...", len(allRows))
+		}
+		sort.Slice(allRows, func(i, j int) bool {
+			if timeIdx < len(allRows[i]) && timeIdx < len(allRows[j]) {
+				return allRows[i][timeIdx] < allRows[j][timeIdx]
+			}
+			return false
+		})
+	}
+
+	return &models.CSVData{
+		Headers: headers,
+		Rows:    allRows,
+		Total:   len(allRows),
+	}, nil
 }
 
 // validateCSV 验证CSV文件格式，跳过格式错误的行
@@ -735,16 +1103,21 @@ func (s *CSVService) processCANDataWithLog(headers []string, rows [][]string, lo
 		}
 	}
 
-	// 并行处理配置
-	numWorkers := runtime.NumCPU()
-	if numWorkers < 1 {
-		numWorkers = 1
+	// 并行处理配置 - 针对32G内存服务器优化
+	numWorkers := runtime.NumCPU() * 2 // 使用2倍CPU核心数的工作线程
+	if numWorkers < 4 {
+		numWorkers = 4
+	}
+	if numWorkers > 32 {
+		numWorkers = 32 // 限制最大工作线程数
 	}
 	rowCount := len(rows)
 
-	// 如果数据量较小，使用单线程处理
-	if rowCount < 1000 {
+	// 如果数据量较小，使用较少线程处理
+	if rowCount < 500 {
 		numWorkers = 1
+	} else if rowCount < 5000 {
+		numWorkers = runtime.NumCPU()
 	}
 
 	if logKey != "" {

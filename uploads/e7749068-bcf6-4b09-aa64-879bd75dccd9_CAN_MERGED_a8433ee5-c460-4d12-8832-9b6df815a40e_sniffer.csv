@@ -45,3 +45,6 @@ publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 17:03:49.853.257,string=2cf:8:[10
 publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 17:03:49.953.257,string=2cf:8:[10 80 f2 aa 47 c8 16 00]
 publish,XRUserIfActor,XRAcqSync,exposeDeviceStatus,2025-11-14 17:03:36.948.363,{ulong=1;enum SwitchStatus=EXPOSE_ON;}
 publish,XRTechMgr,XRAcqSync,exposeDeviceStatus,2025-11-14 17:03:36.948.363,{ulong=1;enum SwitchStatus=EXPOSE_ON;}
+publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 18:03:48.853.257,string=2cf:8:[11 80 f2 aa 47 c8 16 00]
+publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 19:03:48.853.257,string=2cf:8:[11 80 f2 aa 47 c8 16 00]
+publish,XRTechMgr,N/A,FROM_JEDI_MSG,2025-11-24 19:09:48.853.257,string=2cf:8:[11 80 f2 aa 47 c8 16 00]

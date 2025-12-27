@@ -261,10 +261,15 @@ function initializeUpload() {
         fileInput.click();
     });
 
-    // 文件选择
+    // 文件选择 - 支持多文件
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            uploadFile(e.target.files[0]);
+            // 只处理 CAN 和 CANOPEN 协议的多文件
+            if ((selectedProtocol === 'CAN' || selectedProtocol === 'CANOPEN') && e.target.files.length > 1) {
+                uploadMultipleFiles(e.target.files);
+            } else {
+                uploadFile(e.target.files[0]);
+            }
         }
     });
 
@@ -291,7 +296,12 @@ function initializeUpload() {
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            uploadFile(files[0]);
+            // 只处理 CAN 和 CANOPEN 协议的多文件
+            if ((selectedProtocol === 'CAN' || selectedProtocol === 'CANOPEN') && files.length > 1) {
+                uploadMultipleFiles(files);
+            } else {
+                uploadFile(files[0]);
+            }
         }
     });
 }
@@ -329,6 +339,64 @@ async function uploadFile(file) {
             showMessage(`文件上传成功，正在跳转到解析页面...`, 'success');
             // 自动跳转到解析页面
             parseFile(result.file.filename, selectedProtocol);
+        } else {
+            showMessage('上传失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        showMessage('上传失败: ' + error.message, 'error');
+    } finally {
+        showUploadProgress(false);
+        // 清空文件输入
+        document.getElementById('fileInput').value = '';
+    }
+}
+
+// 上传多个文件（CAN 和 CANOPEN 协议）
+async function uploadMultipleFiles(files) {
+    // 检查是否选择了协议
+    if (!selectedProtocol) {
+        showMessage('请先选择协议类型', 'warning');
+        return;
+    }
+
+    // 只支持 CAN 和 CANOPEN 协议
+    if (selectedProtocol !== 'CAN' && selectedProtocol !== 'CANOPEN') {
+        showMessage('多文件上传仅支持 CAN 和 CANOPEN 协议', 'warning');
+        return;
+    }
+
+    // 验证所有文件类型
+    const fileArray = Array.from(files);
+    for (const file of fileArray) {
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            showMessage(`文件 ${file.name} 不是CSV格式`, 'error');
+            return;
+        }
+    }
+
+    // 显示上传进度
+    showUploadProgress(true);
+
+    const formData = new FormData();
+    // 添加所有文件
+    for (const file of fileArray) {
+        formData.append('files', file);
+    }
+    formData.append('protocolType', selectedProtocol);
+
+    try {
+        const response = await fetch('/api/upload-multiple', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const fileCount = result.sourceCount || fileArray.length;
+            showMessage(`${fileCount} 个文件上传成功，正在跳转到解析页面...`, 'success');
+            // 自动跳转到解析页面
+            parseFile(result.mergedFile.filename, selectedProtocol);
         } else {
             showMessage('上传失败: ' + result.message, 'error');
         }
@@ -469,14 +537,31 @@ function renderFilesList() {
     let html = pageFiles.map(file => {
         const fileProtocol = file.protocolType || 'COMMON';
         const protocolBadge = `<span class="badge ${getProtocolBadgeClass(fileProtocol)} ms-2">${fileProtocol}</span>`;
+        // 检查是否是合并文件
+        const isMergedFile = file.filename && file.filename.startsWith('merged_');
+        const mergedBadge = isMergedFile ? '<span class="badge bg-warning text-dark ms-2"><i class="bi bi-collection me-1"></i>合并</span>' : '';
+        const fileIcon = isMergedFile ? 'bi-file-earmark-richtext' : 'bi-file-earmark-spreadsheet';
+
+        // 生成源文件列表显示（仅限合并文件）
+        let sourceFilesHtml = '';
+        if (isMergedFile && file.sourceFiles && file.sourceFiles.length > 0) {
+            const fileList = file.sourceFiles.map(f => `<span class="badge bg-light text-dark border me-1 mb-1"><i class="bi bi-file-earmark-text me-1"></i>${escapeHtml(f)}</span>`).join('');
+            sourceFilesHtml = `
+                <div class="mt-2 pt-2 border-top">
+                    <small class="text-muted"><i class="bi bi-files me-1"></i>包含文件：</small>
+                    <div class="mt-1">${fileList}</div>
+                </div>
+            `;
+        }
+
         return `
-        <div class="card mb-3 file-item">
+        <div class="card mb-3 file-item ${isMergedFile ? 'border-warning' : ''}">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h6 class="card-title mb-2">
-                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>${escapeHtml(file.originalName)}
-                            ${protocolBadge}
+                            <i class="bi ${fileIcon} me-2"></i>${escapeHtml(file.originalName)}
+                            ${protocolBadge}${mergedBadge}
                         </h6>
                         <p class="card-text text-muted small mb-0">
                             <i class="bi bi-hdd me-1"></i>${t('size')}: ${formatFileSize(file.size)} | 
@@ -484,6 +569,7 @@ function renderFilesList() {
                             <i class="bi bi-columns me-1"></i>${t('columns')}: ${file.columnCount} | 
                             <i class="bi bi-clock me-1"></i>${t('uploadTime')}: ${formatDate(file.uploadTime)}
                         </p>
+                        ${sourceFilesHtml}
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="btn-group" role="group">

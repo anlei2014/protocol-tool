@@ -126,8 +126,17 @@ func (h *CSVHandler) ParseFile(c *gin.Context) {
 		}
 	}()
 
-	// 3. 解析文件（带日志记录）
-	data, err := h.csvService.ParseFileWithLog(filename, protocol, logKey)
+	// 3. 检查是否是合并文件（以 merged_ 开头）
+	var data *models.CSVData
+	if strings.HasPrefix(filename, "merged_") {
+		// 使用合并文件解析逻辑
+		utils.Info("检测到合并文件，使用合并解析逻辑: %s", filename)
+		data, err = h.csvService.ParseMergedFiles(filename, protocol, logKey)
+	} else {
+		// 常规单文件解析
+		data, err = h.csvService.ParseFileWithLog(filename, protocol, logKey)
+	}
+
 	if err != nil {
 		if logKey != "" {
 			utils.FileLogError(logKey, "解析文件失败: %v", err)
@@ -206,5 +215,78 @@ func (h *CSVHandler) DeleteFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "File deleted successfully",
+	})
+}
+
+// UploadMultipleFiles 处理多文件上传
+func (h *CSVHandler) UploadMultipleFiles(c *gin.Context) {
+	utils.Info("开始处理多文件上传请求")
+
+	// 获取协议类型参数
+	protocolType := c.DefaultPostForm("protocolType", "CAN")
+	if protocolType != "CAN" && protocolType != "CANOPEN" {
+		utils.Warn("多文件上传不支持协议类型: %s", protocolType)
+		c.JSON(http.StatusBadRequest, models.MultiFileUploadResponse{
+			Success: false,
+			Message: "Multi-file upload only supports CAN and CANOPEN protocols",
+		})
+		return
+	}
+	utils.Info("协议类型: %s", protocolType)
+
+	// 获取所有上传的文件
+	form, err := c.MultipartForm()
+	if err != nil {
+		utils.Error("获取上传表单失败: %v", err)
+		c.JSON(http.StatusBadRequest, models.MultiFileUploadResponse{
+			Success: false,
+			Message: "Failed to get uploaded files: " + err.Error(),
+		})
+		return
+	}
+
+	files := form.File["files"]
+	if len(files) == 0 {
+		utils.Warn("未找到上传的文件")
+		c.JSON(http.StatusBadRequest, models.MultiFileUploadResponse{
+			Success: false,
+			Message: "No files uploaded",
+		})
+		return
+	}
+
+	utils.Info("共收到 %d 个文件", len(files))
+
+	// 验证所有文件类型
+	for _, fileHeader := range files {
+		ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+		if ext != ".csv" {
+			utils.Warn("文件类型不允许: %s", fileHeader.Filename)
+			c.JSON(http.StatusBadRequest, models.MultiFileUploadResponse{
+				Success: false,
+				Message: "Only CSV files are allowed: " + fileHeader.Filename,
+			})
+			return
+		}
+	}
+
+	// 调用服务层上传和合并处理
+	mergedFile, sourceFiles, err := h.csvService.UploadMultipleFiles(files, protocolType)
+	if err != nil {
+		utils.Error("上传多文件失败: %v", err)
+		c.JSON(http.StatusInternalServerError, models.MultiFileUploadResponse{
+			Success: false,
+			Message: "Failed to upload files: " + err.Error(),
+		})
+		return
+	}
+
+	utils.Info("多文件上传成功: 合并文件=%s, 源文件数=%d", mergedFile.Filename, len(sourceFiles))
+	c.JSON(http.StatusOK, models.MultiFileUploadResponse{
+		Success:     true,
+		Message:     "Files uploaded successfully",
+		MergedFile:  mergedFile,
+		SourceFiles: sourceFiles,
+		SourceCount: len(sourceFiles),
 	})
 }

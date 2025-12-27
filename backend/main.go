@@ -53,6 +53,7 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/upload", csvHandler.UploadFile)
+		api.POST("/upload-multiple", csvHandler.UploadMultipleFiles) // 多文件上传
 		api.GET("/files", csvHandler.GetFiles)
 		api.GET("/parse/:filename", csvHandler.ParseFile)
 		api.DELETE("/file/:filename", csvHandler.DeleteFile)
