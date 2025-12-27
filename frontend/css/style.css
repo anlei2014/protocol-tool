@@ -469,6 +469,11 @@ body {
     font-size: 13px;
 }
 
+/* 隐藏表格区域的水平滚动条 */
+.table-responsive {
+    overflow-x: hidden !important;
+}
+
 /* 内容容器顶部间距 */
 .content-container {
     padding-top: 3rem;

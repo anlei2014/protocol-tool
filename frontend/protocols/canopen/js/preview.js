@@ -451,6 +451,20 @@ function applyTableStyles() {
     `;
 }
 
+// 更新顶部预览信息中的页数显示
+function updatePreviewInfo() {
+    const previewInfo = document.getElementById('previewInfo');
+    if (!previewInfo) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const protocol = urlParams.get('protocol') || 'CANOPEN';
+
+    // 获取过滤后的行数
+    const filteredRowCount = unifiedRows.filter(item => !hiddenMessageIds.has(item.id)).length;
+
+    previewInfo.textContent = `${protocol} | 行:${filteredRowCount} | 页:${currentPage}/${totalPages}`;
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', async function () {
     // 先加载所有配置
@@ -509,9 +523,9 @@ function showPreview(data, filename, protocol = 'CAN') {
         fileNameEl.textContent = filename;
     }
 
-    // 更新预览信息徽章
+    // 更新预览信息徽章（稍后在渲染表格后更新页数）
     if (previewInfo) {
-        previewInfo.textContent = `${protocol} | 行:${data.total} | 列:${data.headers.length}`;
+        previewInfo.textContent = `${protocol} | 行:${data.total} | 页:1/1`;
     }
 
     // 左侧标题根据协议变化
@@ -926,16 +940,17 @@ function renderPaginationControls(totalFilteredRows, startRow, endRow) {
     }
 
     // 显示分页控件
-    paginationContainer.style.display = 'flex';
+    paginationContainer.classList.remove('d-none');
 
-    // 更新分页信息
+    // 更新分页信息（只在多页时显示行范围，不显示"共xx行"）
     if (totalPages <= 1) {
-        paginationInfo.textContent = `共 ${totalFilteredRows} 行`;
-        paginationControls.innerHTML = ''; // 只有一页时不显示分页按钮
+        paginationContainer.classList.add('d-none'); // 只有一页时完全隐藏分页容器
+        updatePreviewInfo(); // 更新顶部页数显示
         return;
     }
 
-    paginationInfo.textContent = `显示第 ${startRow}-${endRow} 行，共 ${totalFilteredRows} 行 (第 ${currentPage}/${totalPages} 页)`;
+    paginationInfo.textContent = `显示第 ${startRow}-${endRow} 行`;
+    updatePreviewInfo(); // 更新顶部页数显示
 
     // 生成分页按钮
     let paginationHTML = '';

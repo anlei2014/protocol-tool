@@ -8,7 +8,7 @@
         "rowBorderColor": "#dee2e6"
     },
     "pagination": {
-        "rowsPerPage": 500,
+        "rowsPerPage": 1000,
         "showJumpToPage": true
     },
     "_description": "表格样式配置文件",
